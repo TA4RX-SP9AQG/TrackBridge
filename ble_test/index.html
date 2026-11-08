@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LoRa Tracker BLE Test</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 0; padding: 12px; background: #14171c; color: #e6e9ee; max-width: 900px; }
+  h1 { font-size: 18px; margin: 0 0 8px; }
+  fieldset { border: 1px solid #2c323c; border-radius: 6px; margin: 10px 0; padding: 10px; }
+  legend { color: #9fb0c8; padding: 0 6px; }
+  button { background: #2f6fed; color: #fff; border: 0; border-radius: 4px; padding: 8px 14px; margin: 2px 4px 2px 0; font-size: 14px; }
+  button:disabled { background: #3a3f48; color: #888; }
+  button.warn { background: #b4561a; }
+  input[type=text], select { background: #0e1014; color: #e6e9ee; border: 1px solid #2c323c; border-radius: 4px; padding: 6px; width: 100%; box-sizing: border-box; font-family: ui-monospace, Consolas, monospace; }
+  label { display: block; margin: 4px 0; }
+  #status { font-family: ui-monospace, Consolas, monospace; white-space: pre-wrap; color: #b9d4ff; }
+  #log { height: 340px; overflow-y: auto; background: #0e1014; border: 1px solid #2c323c; border-radius: 4px; padding: 6px; font: 12px/1.4 ui-monospace, Consolas, monospace; }
+  .t { color: #6f7b8c; } .rx { color: #7ee787; } .tx { color: #ffa657; } .err { color: #ff7b72; } .inf { color: #9fb0c8; }
+  .note { color: #9fb0c8; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>LoRa Tracker - BLE iletişim testi (debug)</h1>
+<div class="note">Chrome / Edge (Web Bluetooth). Tracker'a başka bir uygulama (nRF Connect, APRSdroid) bağlıyken çalışmaz.</div>
+
+<fieldset>
+  <legend>Bağlantı</legend>
+  <label><input type="checkbox" id="all"> Tüm BLE cihazlarını göster (filtre kapalı)</label>
+  <button id="btnConnect">Bağlan</button>
+  <button id="btnDisconnect" disabled>Bağlantıyı kes</button>
+  <div id="status">Bağlı değil.</div>
+</fieldset>
+
+<fieldset>
+  <legend>Gönder (DİKKAT: RF'ye yayınlanır)</legend>
+  <div class="note">KISS modunda TNC2 satırı AX.25/KISS çerçevesine çevrilip tracker'a yazılır. Tracker bunu LoRa ile yayınlar; amatör telsiz lisansı ve kendi çağrı işaretiniz gerekir.</div>
+  <label>Mod
+    <select id="sendMode">
+      <option value="kiss">KISS (TNC2 satırı → AX.25 → KISS)</option>
+      <option value="raw">Ham metin (satır sonu ile)</option>
+    </select>
+  </label>
+  <label>İçerik
+    <input type="text" id="payload" value="N0CALL-7>APLRT1,WIDE1-1:>BLE test">
+  </label>
+  <button id="btnSend" class="warn" disabled>Gönder</button>
+  <span class="note">N0CALL değiştirilmeden gönderme kapalı.</span>
+</fieldset>
+
+<fieldset>
+  <legend>Günlük</legend>
+  <label><input type="checkbox" id="rawChunks" checked> Her bildirim parçasını (hex) göster</label>
+  <button id="btnClear">Temizle</button>
+  <div id="log"></div>
+</fieldset>
+
+<script>
+'use strict';
+const KISS_SVC = '00000001-ba2a-46c9-ae49-01b0961f68bb';
+const NUS_SVC  = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const FEND = 0xC0, FESC = 0xDB, TFEND = 0xDC, TFESC = 0xDD;
+
+const $ = (id) => document.getElementById(id);
+const logEl = $('log');
+const state = { device: null, notifyChar: null, writeChar: null, isKiss: false, buf: [], rxChunks: 0, rxBytes: 0 };
+
+function log(cls, text) {
+  const line = document.createElement('div');
+  const t = document.createElement('span');
+  t.className = 't';
+  t.textContent = new Date().toLocaleTimeString() + ' ';
+  const m = document.createElement('span');
+  m.className = cls;
+  m.textContent = text;
+  line.append(t, m);
+  logEl.append(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+const hex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(' ');
+const latin1 = (bytes) => Array.from(bytes, (b) => String.fromCharCode(b)).join('');
+const props = (p) => ['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter((k) => p[k]).join('|');
+
+function setStatus(text) { $('status').textContent = text; }
+function updateButtons() {
+  const connected = !!(state.device && state.device.gatt.connected);
+  $('btnConnect').disabled = connected;
+  $('btnDisconnect').disabled = !connected;
+  $('btnSend').disabled = !(connected && state.writeChar);
+}
+
+// ---- AX.25 / KISS decode ----
+function decodeAddress(b, offset, isDigi) {
+  let call = '';
+  for (let i = 0; i < 6; i++) {
+    const c = b[offset + i] >> 1;
+    if (c !== 0x20) call += String.fromCharCode(c);
+  }
+  const ssidByte = b[offset + 6];
+  const ssid = (ssidByte >> 1) & 0x0f;
+  if (ssid) call += '-' + ssid;
+  if (isDigi && (ssidByte & 0x80)) call += '*';
+  return { call, last: (ssidByte & 1) === 1 };
+}
+
+function decodeKissFrame(frame) {
+  // frame = bytes between FENDs: [cmd, ...escaped data]
+  const cmd = frame[0];
+  const data = [];
+  for (let i = 1; i < frame.length; i++) {
+    if (frame[i] === FESC && i + 1 < frame.length) {
+      i++;
+      data.push(frame[i] === TFEND ? FEND : frame[i] === TFESC ? FESC : frame[i]);
+    } else {
+      data.push(frame[i]);
+    }
+  }
+  if ((cmd & 0x0f) !== 0) return 'KISS komutu 0x' + cmd.toString(16) + ' (veri çerçevesi değil): ' + hex(data);
+  if (data.length < 16) return 'AX.25 çok kısa (' + data.length + ' bayt): ' + hex(data);
+  const dst = decodeAddress(data, 0, false);
+  const src = decodeAddress(data, 7, false);
+  let off = 14, last = src.last;
+  const digis = [];
+  while (!last && off + 7 <= data.length) {
+    const d = decodeAddress(data, off, true);
+    digis.push(d.call);
+    last = d.last;
+    off += 7;
+  }
+  const info = latin1(data.slice(off + 2));
+  return src.call + '>' + dst.call + (digis.length ? ',' + digis.join(',') : '') + ':' + info;
+}
+
+// ---- KISS stream reassembly ----
+function pushRx(bytes) {
+  for (const b of bytes) state.buf.push(b);
+  for (;;) {
+    const start = state.buf.indexOf(FEND);
+    if (start === -1) { state.buf.length = 0; return; }
+    if (start > 0) state.buf.splice(0, start);
+    const end = state.buf.indexOf(FEND, 1);
+    if (end === -1) return;                     // frame not finished yet
+    const frame = state.buf.splice(0, end + 1).slice(1, -1);
+    if (frame.length === 0) {                   // back-to-back FENDs
+      state.buf.unshift(FEND);
+      continue;
+    }
+    log('rx', 'KISS çerçeve (' + frame.length + ' bayt): ' + decodeKissFrame(frame));
+  }
+}
+
+// ---- KISS encode ----
+function encodeAddress(text, last, isDigi) {
+  const m = /^([A-Za-z0-9]{1,6})(?:-(\d{1,2}))?(\*)?$/.exec(text.trim());
+  if (!m) throw new Error('Geçersiz adres: ' + text);
+  const ssid = m[2] ? parseInt(m[2], 10) : 0;
+  if (ssid > 15) throw new Error('SSID 0-15 olmalı: ' + text);
+  const out = [];
+  const call = m[1].toUpperCase().padEnd(6, ' ');
+  for (let i = 0; i < 6; i++) out.push(call.charCodeAt(i) << 1);
+  out.push(0x60 | (ssid << 1) | (isDigi && m[3] ? 0x80 : 0) | (last ? 1 : 0));
+  return out;
+}
+
+function tnc2ToKiss(line) {
+  const m = /^([^>]+)>([^,:]+)((?:,[^,:]+)*):([\s\S]*)$/.exec(line);
+  if (!m) throw new Error('TNC2 biçimi: KAYNAK>HEDEF[,YOL]:bilgi');
+  const digis = m[3] ? m[3].slice(1).split(',') : [];
+  const ax = [].concat(
+    encodeAddress(m[2], false, false),
+    encodeAddress(m[1], digis.length === 0, false),
+    ...digis.map((d, i) => encodeAddress(d, i === digis.length - 1, true)),
+    [0x03, 0xF0]
+  );
+  for (const ch of m[4]) {
+    const code = ch.charCodeAt(0);
+    if (code > 255) throw new Error('Bilgi alanında ASCII/Latin-1 dışı karakter var.');
+    ax.push(code);
+  }
+  const kiss = [FEND, 0x00];
+  for (const b of ax) {
+    if (b === FEND) kiss.push(FESC, TFEND);
+    else if (b === FESC) kiss.push(FESC, TFESC);
+    else kiss.push(b);
+  }
+  kiss.push(FEND);
+  return Uint8Array.from(kiss);
+}
+
+// ---- connection ----
+function onNotify(ev) {
+  const v = new Uint8Array(ev.target.value.buffer.slice(ev.target.value.byteOffset, ev.target.value.byteOffset + ev.target.value.byteLength));
+  state.rxChunks++;
+  state.rxBytes += v.length;
+  if ($('rawChunks').checked) log('inf', 'parça #' + state.rxChunks + ' (' + v.length + ' bayt): ' + hex(v));
+  if (state.isKiss) pushRx(v);
+  else log('rx', 'metin: ' + JSON.stringify(latin1(v)));
+}
+
+async function connect() {
+  if (!navigator.bluetooth) { log('err', 'Bu tarayıcıda Web Bluetooth yok (Chrome/Edge kullanın).'); return; }
+  const opts = $('all').checked
+    ? { acceptAllDevices: true, optionalServices: [KISS_SVC, NUS_SVC] }
+    : { filters: [{ services: [KISS_SVC] }, { services: [NUS_SVC] }, { namePrefix: 'LoRa' }], optionalServices: [KISS_SVC, NUS_SVC] };
+  try {
+    const device = await navigator.bluetooth.requestDevice(opts);
+    state.device = device;
+    device.addEventListener('gattserverdisconnected', () => {
+      log('err', 'Bağlantı koptu.');
+      setStatus('Bağlı değil.');
+      state.notifyChar = state.writeChar = null;
+      updateButtons();
+    });
+    log('inf', 'Seçilen: ' + (device.name || '(isimsiz)') + '  id=' + device.id);
+    const server = await device.gatt.connect();
+    log('inf', 'GATT bağlandı, servisler aranıyor...');
+    const services = await server.getPrimaryServices();
+    let report = 'Cihaz: ' + (device.name || '?') + '\n';
+    let chosen = null;
+    for (const s of services) {
+      report += 'Servis ' + s.uuid + '\n';
+      const chars = await s.getCharacteristics();
+      for (const c of chars) report += '  Karakteristik ' + c.uuid + '  [' + props(c.properties) + ']\n';
+      if (!chosen && (s.uuid === KISS_SVC || s.uuid === NUS_SVC)) chosen = { s, chars };
+    }
+    if (!chosen) throw new Error('KISS (00000001-ba2a-...) veya Nordic UART servisi bulunamadı.\n' + report);
+    state.isKiss = chosen.s.uuid === KISS_SVC;
+    state.notifyChar = chosen.chars.find((c) => c.properties.notify || c.properties.indicate) || null;
+    state.writeChar = chosen.chars.find((c) => c.properties.write || c.properties.writeWithoutResponse) || null;
+    state.buf.length = 0; state.rxChunks = 0; state.rxBytes = 0;
+    report += 'Mod: ' + (state.isKiss ? 'KISS' : 'TNC2/NUS') + '\n';
+    report += 'Bildirim karakteristiği: ' + (state.notifyChar ? state.notifyChar.uuid : 'YOK') + '\n';
+    report += 'Yazma karakteristiği: ' + (state.writeChar ? state.writeChar.uuid : 'YOK');
+    setStatus(report);
+    if (state.notifyChar) {
+      state.notifyChar.addEventListener('characteristicvaluechanged', onNotify);
+      await state.notifyChar.startNotifications();
+      log('inf', 'Bildirimler açıldı. Tracker\'ın duyduğu paketler burada görünür.');
+    } else {
+      log('err', 'Bildirim karakteristiği yok, veri alınamaz.');
+    }
+  } catch (e) {
+    log('err', 'Hata: ' + (e && e.message ? e.message : e));
+  }
+  updateButtons();
+}
+
+async function disconnect() {
+  if (state.device && state.device.gatt.connected) state.device.gatt.disconnect();
+  updateButtons();
+}
+
+async function send() {
+  if (!state.writeChar) return;
+  const text = $('payload').value;
+  if (/N0CALL/i.test(text)) { log('err', 'Önce kendi çağrı işaretinizi yazın (N0CALL değiştirilmeli).'); return; }
+  let bytes;
+  try {
+    bytes = $('sendMode').value === 'kiss'
+      ? tnc2ToKiss(text)
+      : Uint8Array.from(Array.from(text + '\n', (ch) => ch.charCodeAt(0) & 0xff));
+  } catch (e) { log('err', e.message); return; }
+  if (!window.confirm('Bu paket tracker tarafından RF üzerinden yayınlanacak.\n\n' + text + '\n\nGönderilsin mi?')) return;
+  try {
+    const canResp = state.writeChar.properties.write;
+    const CHUNK = 20;                         // safe for the default 23-byte ATT MTU
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      const part = bytes.slice(i, i + CHUNK);
+      if (canResp) await state.writeChar.writeValueWithResponse(part);
+      else await state.writeChar.writeValueWithoutResponse(part);
+    }
+    log('tx', 'Yazıldı (' + bytes.length + ' bayt): ' + hex(bytes));
+  } catch (e) {
+    log('err', 'Yazma hatası: ' + (e && e.message ? e.message : e));
+  }
+}
+
+$('btnConnect').addEventListener('click', connect);
+$('btnDisconnect').addEventListener('click', disconnect);
+$('btnSend').addEventListener('click', send);
+$('btnClear').addEventListener('click', () => { logEl.textContent = ''; });
+log('inf', navigator.bluetooth ? 'Hazır. "Bağlan" ile LoRaTracker\'ı seçin.' : 'Web Bluetooth desteklenmiyor.');
+</script>
+</body>
+</html>
