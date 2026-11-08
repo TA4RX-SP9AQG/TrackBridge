@@ -73,6 +73,15 @@ class _SettingsPageState extends State<SettingsPage> {
       _symbolTable = choice.table;
       _symbolCode = choice.code;
     });
+    // A discrete choice is applied right away; only the text fields need "Kaydet".
+    // Built from the saved settings so other unsaved form edits are not written by accident.
+    final c = widget.controller;
+    await c.updateSettings(c.settings.copyWith(symbolTable: choice.table, symbol: choice.code));
+  }
+
+  Future<void> _applyNow(AppSettings Function(AppSettings saved) change) {
+    final c = widget.controller;
+    return c.updateSettings(change(c.settings));
   }
 
   void _fail(String message) =>
@@ -160,7 +169,10 @@ class _SettingsPageState extends State<SettingsPage> {
             ButtonSegment(value: PositionSource.phone, label: Text('Telefon GPS'), icon: Icon(Icons.my_location)),
           ],
           selected: {_source},
-          onSelectionChanged: (v) => setState(() => _source = v.first),
+          onSelectionChanged: (v) {
+            setState(() => _source = v.first);
+            _applyNow((s) => s.copyWith(positionSource: v.first));
+          },
         ),
         const SizedBox(height: 12),
         TextField(
@@ -180,6 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
           divisions: 4,
           label: '$_ambiguity',
           onChanged: (v) => setState(() => _ambiguity = v.round()),
+          onChangeEnd: (v) => _applyNow((s) => s.copyWith(ambiguity: v.round())),
         ),
         const Text('0 = tam konum yayınlanır. 2 = yaklaşık 2 km\'lik kare (önerilen).'),
         const SizedBox(height: 12),
@@ -188,7 +201,10 @@ class _SettingsPageState extends State<SettingsPage> {
           title: const Text('Gelen mesajlara otomatik ack gönder'),
           subtitle: const Text('Yalnızca size adreslenen, numaralı mesajlara karşılık olarak yayın yapar.'),
           value: _autoAck,
-          onChanged: (v) => setState(() => _autoAck = v),
+          onChanged: (v) {
+            setState(() => _autoAck = v);
+            _applyNow((s) => s.copyWith(autoAck: v));
+          },
         ),
         const SizedBox(height: 12),
         FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save), label: const Text('Kaydet')),
