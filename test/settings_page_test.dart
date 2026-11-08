@@ -51,6 +51,8 @@ void main() {
   testWidgets('position source switch is applied immediately', (tester) async {
     final controller = await openSettings(tester);
     expect(controller.settings.positionSource, PositionSource.manual);
+    await tester.ensureVisible(find.text('Telefon GPS')); // the sections push it below the first screen
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Telefon GPS'));
     await tester.pumpAndSettle();
     expect(controller.settings.positionSource, PositionSource.phone);

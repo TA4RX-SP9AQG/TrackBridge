@@ -88,9 +88,10 @@ flutter build apk --debug
 lib/core    KISS, AX.25 and APRS encoding/decoding (pure Dart, unit tested with frames captured from a real tracker)
 lib/ble     BLE link to the tracker (flutter_reactive_ble)
 lib/state   settings, message and packet state
-lib/ui      screens and widgets
+lib/ui      screens and widgets (app_theme.dart: Material 3 light/dark theme and spacing tokens; widgets/ui_kit.dart: shared components)
 ble_test    single-page Web Bluetooth tester for debugging a tracker from desktop Chrome
 tools       helper scripts
+tool        design_screenshots_test.dart renders the screens to PNG for design review: flutter test tool/design_screenshots_test.dart
 docs        release checklist
 ```
 

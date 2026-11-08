@@ -145,10 +145,11 @@ class _MapPageState extends State<MapPage> {
           Positioned(
             bottom: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: scheme.surface.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(4),
+                color: scheme.surface.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: scheme.outlineVariant),
               ),
               child: Text(
                 s.displayName,
@@ -204,22 +205,38 @@ class _MapPageState extends State<MapPage> {
                   userAgentPackageName: _userAgentPackage,
                   tileProvider: widget.tileProvider,
                 ),
-                MarkerLayer(markers: [for (final s in stations) _stationMarker(s)]),
                 if (own != null)
                   MarkerLayer(markers: [
                     Marker(
                       point: LatLng(own.lat, own.lon),
                       width: 40,
                       height: 40,
-                      child: Icon(Icons.home, key: const ValueKey('own_marker'), color: scheme.primary, size: 32),
+                      child: Container(
+                        key: const ValueKey('own_marker'),
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: const [BoxShadow(blurRadius: 6, color: Color(0x55000000))],
+                        ),
+                        child: Icon(Icons.home_rounded, color: scheme.onPrimary, size: 20),
+                      ),
                     ),
                   ]),
-                SimpleAttributionWidget(
-                  source: Text(isOpenStreetMapUrl(url)
-                      ? 'OpenStreetMap contributors'
-                      : 'harita: ${tileHost(url) ?? 'özel karo sunucusu'}'),
-                ),
+                MarkerLayer(markers: [for (final s in stations) _stationMarker(s)]),
               ],
+            ),
+            Positioned(
+              left: 8,
+              bottom: 8,
+              right: 72,
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: _MapAttribution(
+                  isOpenStreetMap: isOpenStreetMapUrl(url),
+                  host: tileHost(url),
+                ),
+              ),
             ),
             Positioned(
               right: 12,
@@ -266,6 +283,32 @@ class _MapPageState extends State<MapPage> {
           ]),
         );
       },
+    );
+  }
+}
+
+/// Map credit that wraps instead of overflowing at large text sizes.
+class _MapAttribution extends StatelessWidget {
+  const _MapAttribution({required this.isOpenStreetMap, required this.host});
+
+  final bool isOpenStreetMap;
+  final String? host;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        isOpenStreetMap ? '© OpenStreetMap contributors' : 'harita: ${host ?? 'özel karo sunucusu'}',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurface),
+      ),
     );
   }
 }

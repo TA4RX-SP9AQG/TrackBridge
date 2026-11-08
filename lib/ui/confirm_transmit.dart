@@ -2,36 +2,54 @@ import 'package:flutter/material.dart';
 
 import '../state/app_controller.dart';
 import '../state/models.dart';
+import 'app_theme.dart';
 
 /// Shows the exact packet and asks the user to confirm before it goes on the air.
 Future<bool> confirmTransmit(BuildContext context, OutgoingPacket packet) async {
   final result = await showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Yayınlansın mı?'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Bu paket tracker tarafından telsizle (LoRa) yayınlanacak. '
-              'İnternete düşerse herkese açık görünür ve geri alınamaz.'),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(6),
+    builder: (context) {
+      final theme = Theme.of(context);
+      final scheme = theme.colorScheme;
+      return AlertDialog(
+        icon: Icon(Icons.cell_tower_rounded, color: scheme.tertiary, size: 32),
+        title: const Text('Yayınlansın mı?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bu paket tracker tarafından telsizle (LoRa) yayınlanacak. '
+              'İnternete düşerse herkese açık görünür ve geri alınamaz.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
-            child: SelectableText(packet.tnc2, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+            const SizedBox(height: Gaps.l),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Gaps.m),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(Radii.m),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: SelectableText(
+                packet.tnc2,
+                style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace', fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton.icon(
+            style: transmitButtonStyle(context),
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.cell_tower_rounded),
+            label: const Text('Yayınla'),
           ),
         ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Yayınla')),
-      ],
-    ),
+      );
+    },
   );
   return result ?? false;
 }

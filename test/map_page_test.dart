@@ -124,6 +124,8 @@ void main() {
     await hear(tester, s, 'N1TEST-7', '!5003.88N/01956.70E>x');
     await tester.tap(find.byKey(const ValueKey('station_stn/N1TEST-7')));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Başka uygulamada aç'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Başka uygulamada aç'));
     await tester.pumpAndSettle();
     expect(s.launcher.tried.single.scheme, 'geo');

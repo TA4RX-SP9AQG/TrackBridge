@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'ble/reactive_tracker_link.dart';
 import 'state/app_controller.dart';
 import 'state/settings_store.dart';
+import 'ui/app_theme.dart';
 import 'ui/home_page.dart';
 import 'ui/permissions.dart';
 
@@ -28,12 +29,8 @@ class TrackBridgeApp extends StatelessWidget {
     return MaterialApp(
       title: 'TrackBridge',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF1E6FD9), useMaterial3: true),
-      darkTheme: ThemeData(
-        colorSchemeSeed: const Color(0xFF1E6FD9),
-        brightness: Brightness.dark,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       home: HomePage(controller: controller),
     );
   }

@@ -38,6 +38,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.verified_user_outlined),
         title: const Text('Amatör telsiz uyarısı'),
         content: const Text(
           'TrackBridge, LoRa APRS tracker\'ınız üzerinden amatör telsiz frekanslarında yayın yapar. '
@@ -72,11 +73,31 @@ class _HomePageState extends State<HomePage> {
           if (i == 1) _mapOpened = true;
         }),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.bluetooth), label: 'Bağlantı'),
-          NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Harita'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), label: 'Mesajlar'),
-          NavigationDestination(icon: Icon(Icons.cell_tower), label: 'Beacon'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Ayarlar'),
+          NavigationDestination(
+            icon: Icon(Icons.bluetooth_rounded),
+            selectedIcon: Icon(Icons.bluetooth_connected_rounded),
+            label: 'Bağlantı',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map_rounded),
+            label: 'Harita',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline_rounded),
+            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            label: 'Mesajlar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.cell_tower_rounded),
+            selectedIcon: Icon(Icons.cell_tower_rounded),
+            label: 'Beacon',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded),
+            label: 'Ayarlar',
+          ),
         ],
       ),
     );

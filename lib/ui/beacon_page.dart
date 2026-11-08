@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../state/app_controller.dart';
 import '../core/symbols.dart';
+import '../state/app_controller.dart';
 import '../state/models.dart';
-import 'symbol_widget.dart';
+import 'app_theme.dart';
 import 'confirm_transmit.dart';
+import 'symbol_widget.dart';
+import 'widgets/ui_kit.dart';
 
 /// Approximate size of the blanked square for each ambiguity level.
 const List<String> ambiguityLabels = <String>['~20 m', '~200 m', '~2 km', '~20 km', '~200 km'];
@@ -42,60 +44,115 @@ class _BeaconPageState extends State<BeaconPage> {
       builder: (context, _) {
         final s = widget.controller.settings;
         final connected = widget.controller.linkInfo.isConnected;
+        final theme = Theme.of(context);
+        final scheme = theme.colorScheme;
+        final symbol = resolveSymbol(s.symbolTable, s.symbol);
         return Scaffold(
           appBar: AppBar(title: const Text('Beacon')),
-          body: ListView(padding: const EdgeInsets.all(16), children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _row('Çağrı işareti', s.callsign.isEmpty ? '(ayarlanmadı)' : s.callsign),
-                  _row('Konum kaynağı', s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i'),
-                  _row('Konum belirsizliği', '${s.ambiguity}  (${ambiguityLabels[s.ambiguity]})'),
-                  _row('Yol (path)', s.path.isEmpty ? '(boş)' : s.path),
-                  _row('Yorum', s.comment),
-                  _symbolRow(s),
+          body: ListView(padding: const EdgeInsets.fromLTRB(Gaps.l, Gaps.s, Gaps.l, Gaps.xl), children: [
+            SurfaceCard(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(Radii.l)),
+                    alignment: Alignment.center,
+                    child: AprsSymbolIcon(table: s.symbolTable, code: s.symbol, size: 48),
+                  ),
+                  const SizedBox(width: Gaps.l),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(s.callsign.isEmpty ? '(çağrı işareti yok)' : s.callsign, style: theme.textTheme.titleLarge),
+                      Text(
+                        symbol?.info.name ?? '${s.symbolTable}${s.symbol}',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ]),
+                  ),
                 ]),
-              ),
+                const SizedBox(height: Gaps.l),
+                Wrap(spacing: Gaps.s, runSpacing: Gaps.s, children: [
+                  StatusPill(
+                    s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i',
+                    icon: s.positionSource == PositionSource.manual ? Icons.home_outlined : Icons.my_location_rounded,
+                  ),
+                  StatusPill(
+                    s.ambiguity == 0 ? 'Tam konum' : 'Belirsizlik ${s.ambiguity} · ${ambiguityLabels[s.ambiguity]}',
+                    icon: s.ambiguity == 0 ? Icons.location_on_outlined : Icons.blur_on_rounded,
+                    tone: s.ambiguity == 0 ? PillTone.warning : PillTone.success,
+                  ),
+                ]),
+              ]),
             ),
-            const SizedBox(height: 12),
-            const Text('Belirsizlik > 0 iken gizlenen basamaklar pakete hiç girmez; tam konumunuz yayınlanmaz.'),
-            const SizedBox(height: 16),
+            const SectionHeader('Paket ayrıntıları'),
+            SurfaceCard(
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.l, vertical: Gaps.s),
+              child: Column(children: [
+                _row(context, 'Çağrı işareti', s.callsign.isEmpty ? '(ayarlanmadı)' : s.callsign),
+                const Divider(),
+                _row(context, 'Konum kaynağı', s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i'),
+                const Divider(),
+                _row(context, 'Konum belirsizliği', '${s.ambiguity}  (${ambiguityLabels[s.ambiguity]})'),
+                const Divider(),
+                _row(context, 'Yol (path)', s.path.isEmpty ? '(boş)' : s.path),
+                const Divider(),
+                _row(context, 'Yorum', s.comment.isEmpty ? '(boş)' : s.comment),
+              ]),
+            ),
+            const SizedBox(height: Gaps.m),
+            Container(
+              padding: const EdgeInsets.all(Gaps.l),
+              decoration: BoxDecoration(color: scheme.secondaryContainer, borderRadius: BorderRadius.circular(Radii.l)),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ExcludeSemantics(child: Icon(Icons.privacy_tip_outlined, color: scheme.onSecondaryContainer)),
+                const SizedBox(width: Gaps.m),
+                Expanded(
+                  child: Text(
+                    'Belirsizlik > 0 iken gizlenen basamaklar pakete hiç girmez; tam konumunuz yayınlanmaz.',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: Gaps.xl),
             FilledButton.icon(
+              style: transmitButtonStyle(context),
               onPressed: connected && !_busy ? _send : null,
               icon: _busy
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.cell_tower),
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.cell_tower_rounded),
               label: const Text('Beacon hazırla ve gönder'),
             ),
             if (!connected)
-              const Padding(padding: EdgeInsets.only(top: 8), child: Text('Önce Bağlantı sekmesinden tracker\'a bağlanın.')),
+              const Padding(
+                padding: EdgeInsets.only(top: Gaps.m),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: StatusPill(
+                    'Önce Bağlantı sekmesinden tracker\'a bağlanın.',
+                    icon: Icons.bluetooth_disabled_rounded,
+                    tone: PillTone.warning,
+                  ),
+                ),
+              ),
           ]),
         );
       },
     );
   }
 
-  Widget _symbolRow(AppSettings s) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          const SizedBox(width: 130, child: Text('Simge')),
-          AprsSymbolIcon(table: s.symbolTable, code: s.symbol, size: 32),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              resolveSymbol(s.symbolTable, s.symbol)?.info.name ?? '${s.symbolTable}${s.symbol}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ]),
-      );
-
-  Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: 130, child: Text(label)),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
-        ]),
-      );
+  Widget _row(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Gaps.m),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: 132,
+          child: Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ),
+        Expanded(child: Text(value, style: theme.textTheme.titleSmall)),
+      ]),
+    );
+  }
 }

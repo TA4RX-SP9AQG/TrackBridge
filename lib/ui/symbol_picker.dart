@@ -151,12 +151,13 @@ class _SymbolTile extends StatelessWidget {
       message: '${symbol.name}  (${symbol.table}${symbol.code})',
       child: InkWell(
         key: ValueKey('symbol_${symbol.table}${symbol.code}'),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: selected ? scheme.primary : Colors.transparent, width: 2),
+            color: selected ? scheme.primaryContainer : scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: selected ? scheme.primary : scheme.outlineVariant, width: selected ? 2 : 1),
           ),
           padding: const EdgeInsets.all(4),
           child: Column(children: [

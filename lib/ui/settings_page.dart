@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../core/aprs.dart';
 import '../core/ax25.dart';
-import '../state/app_controller.dart';
 import '../core/symbols.dart';
 import '../core/tile_url.dart';
+import '../state/app_controller.dart';
 import '../state/models.dart';
+import 'app_theme.dart';
 import 'beacon_page.dart' show ambiguityLabels;
 import 'symbol_picker.dart';
 import 'symbol_widget.dart';
+import 'widgets/ui_kit.dart';
 
 /// Parses "52.2297, 21.0122" (as copied from a map app). Returns null if invalid.
 ({double lat, double lon})? parseLatLon(String text) {
@@ -87,8 +89,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return c.updateSettings(change(c.settings));
   }
 
-  void _fail(String message) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void _fail(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 
   Future<void> _save() async {
     final callsign = _callsign.text.trim().toUpperCase();
@@ -151,91 +152,138 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Ayarlar')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        TextField(
-          controller: _callsign,
-          textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(labelText: 'Çağrı işareti-SSID', hintText: 'SP9AQG-9'),
+      body: ListView(padding: const EdgeInsets.fromLTRB(Gaps.l, 0, Gaps.l, Gaps.xl), children: [
+        const SectionHeader('İstasyon', subtitle: 'Paketlerde görünen kimliğiniz'),
+        SurfaceCard(
+          child: Column(children: [
+            TextField(
+              controller: _callsign,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(labelText: 'Çağrı işareti-SSID', hintText: 'SP9AQG-9'),
+            ),
+            const SizedBox(height: Gaps.l),
+            TextField(
+              controller: _path,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(labelText: 'Yol (path)', helperText: 'Virgülle ayırın; boş = digipeater yok'),
+            ),
+          ]),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _path,
-          textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(labelText: 'Yol (path)', helperText: 'Virgülle ayırın; boş = digipeater yok'),
-        ),
-        const SizedBox(height: 12),
-        TextField(controller: _comment, decoration: const InputDecoration(labelText: 'Beacon yorumu')),
-        const SizedBox(height: 12),
+        const SectionHeader('Beacon', subtitle: 'Konum paketinizin görünümü ve konumu'),
         _SymbolTile(table: _symbolTable, code: _symbolCode, onPick: _pickSymbol),
-        const SizedBox(height: 20),
-        Text('Beacon konumu', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        SegmentedButton<PositionSource>(
-          segments: const [
-            ButtonSegment(value: PositionSource.manual, label: Text('Sabit konum'), icon: Icon(Icons.home)),
-            ButtonSegment(value: PositionSource.phone, label: Text('Telefon GPS'), icon: Icon(Icons.my_location)),
-          ],
-          selected: {_source},
-          onSelectionChanged: (v) {
-            setState(() => _source = v.first);
-            _applyNow((s) => s.copyWith(positionSource: v.first));
-          },
+        const SizedBox(height: Gaps.m),
+        SurfaceCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            TextField(controller: _comment, decoration: const InputDecoration(labelText: 'Beacon yorumu')),
+            const SizedBox(height: Gaps.xl),
+            Text('Beacon konumu', style: theme.textTheme.titleSmall),
+            const SizedBox(height: Gaps.s),
+            SegmentedButton<PositionSource>(
+              expandedInsets: EdgeInsets.zero,
+              segments: const [
+                ButtonSegment(value: PositionSource.manual, label: Text('Sabit konum'), icon: Icon(Icons.home_outlined)),
+                ButtonSegment(value: PositionSource.phone, label: Text('Telefon GPS'), icon: Icon(Icons.my_location_rounded)),
+              ],
+              selected: {_source},
+              onSelectionChanged: (v) {
+                setState(() => _source = v.first);
+                _applyNow((s) => s.copyWith(positionSource: v.first));
+              },
+            ),
+            const SizedBox(height: Gaps.l),
+            TextField(
+              controller: _position,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              decoration: const InputDecoration(
+                labelText: 'Sabit konum (enlem, boylam)',
+                helperText: 'Harita uygulamasından kopyalayıp yapıştırabilirsiniz',
+              ),
+            ),
+            const SizedBox(height: Gaps.xl),
+            Row(children: [
+              Expanded(child: Text('Konum belirsizliği', style: theme.textTheme.titleSmall)),
+              StatusPill(
+                '$_ambiguity  (${ambiguityLabels[_ambiguity]})',
+                tone: _ambiguity == 0 ? PillTone.warning : PillTone.success,
+              ),
+            ]),
+            Slider(
+              value: _ambiguity.toDouble(),
+              min: 0,
+              max: 4,
+              divisions: 4,
+              label: '$_ambiguity',
+              onChanged: (v) => setState(() => _ambiguity = v.round()),
+              onChangeEnd: (v) => _applyNow((s) => s.copyWith(ambiguity: v.round())),
+            ),
+            Text(
+              "0 = tam konum yayınlanır. 2 = yaklaşık 2 km'lik kare (önerilen).",
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ]),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _position,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-          decoration: const InputDecoration(
-            labelText: 'Sabit konum (enlem, boylam)',
-            helperText: 'Harita uygulamasından kopyalayıp yapıştırabilirsiniz',
+        const SectionHeader('Mesajlar'),
+        SurfaceCard(
+          padding: const EdgeInsets.symmetric(horizontal: Gaps.l, vertical: Gaps.xs),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Gelen mesajlara otomatik ack gönder'),
+            subtitle: const Text('Yalnızca size adreslenen, numaralı mesajlara karşılık olarak yayın yapar.'),
+            value: _autoAck,
+            onChanged: (v) {
+              setState(() => _autoAck = v);
+              _applyNow((s) => s.copyWith(autoAck: v));
+            },
           ),
         ),
-        const SizedBox(height: 12),
-        Text('Konum belirsizliği: $_ambiguity  (${ambiguityLabels[_ambiguity]})'),
-        Slider(
-          value: _ambiguity.toDouble(),
-          min: 0,
-          max: 4,
-          divisions: 4,
-          label: '$_ambiguity',
-          onChanged: (v) => setState(() => _ambiguity = v.round()),
-          onChangeEnd: (v) => _applyNow((s) => s.copyWith(ambiguity: v.round())),
-        ),
-        const Text('0 = tam konum yayınlanır. 2 = yaklaşık 2 km\'lik kare (önerilen).'),
-        const SizedBox(height: 12),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Gelen mesajlara otomatik ack gönder'),
-          subtitle: const Text('Yalnızca size adreslenen, numaralı mesajlara karşılık olarak yayın yapar.'),
-          value: _autoAck,
-          onChanged: (v) {
-            setState(() => _autoAck = v);
-            _applyNow((s) => s.copyWith(autoAck: v));
-          },
-        ),
-        const SizedBox(height: 12),
-        const SizedBox(height: 20),
-        Text('Harita', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _tileUrl,
-          keyboardType: TextInputType.url,
-          decoration: InputDecoration(
-            labelText: 'Harita karo adresi',
-            helperText: 'Varsayılan OpenStreetMap yalnızca geliştirme/test içindir. {z}/{x}/{y} gerekir.',
-            helperMaxLines: 3,
-            suffixIcon: IconButton(
-              tooltip: 'Varsayılana dön',
-              icon: const Icon(Icons.restore),
-              onPressed: () => setState(() => _tileUrl.text = kDefaultTileUrl),
+        const SectionHeader('Harita'),
+        SurfaceCard(
+          child: TextField(
+            controller: _tileUrl,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: 'Harita karo adresi',
+              helperText: 'Varsayılan OpenStreetMap yalnızca geliştirme/test içindir. {z}/{x}/{y} gerekir.',
+              helperMaxLines: 3,
+              suffixIcon: IconButton(
+                tooltip: 'Varsayılana dön',
+                icon: const Icon(Icons.restore_rounded),
+                onPressed: () => setState(() => _tileUrl.text = kDefaultTileUrl),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save), label: const Text('Kaydet')),
+        const SectionHeader('Hakkında'),
+        SurfaceCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('TrackBridge', style: theme.textTheme.titleSmall),
+            const SizedBox(height: Gaps.xs),
+            Text(
+              'Açık kaynak (GPL-3.0). APRS simgeleri: hessu/aprs-symbols (OH7LZB). '
+              'Harita verisi © OpenStreetMap katkıda bulunanlar.',
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ]),
+        ),
       ]),
+      bottomNavigationBar: Material(
+        color: scheme.surface,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Gaps.l, Gaps.s, Gaps.l, Gaps.s),
+            child: FilledButton.icon(
+              onPressed: _save,
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Kaydet'),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -250,17 +298,32 @@ class _SymbolTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final resolved = resolveSymbol(table, code);
     final overlay = resolved?.overlay;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: ListTile(
-        leading: AprsSymbolIcon(table: table, code: code, size: 44),
-        title: Text(resolved?.info.name ?? 'Bilinmeyen sembol'),
-        subtitle: Text('Beacon simgesi  ($table$code${overlay == null ? '' : ', katman $overlay'})'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onPick,
-      ),
+    return SurfaceCard(
+      onTap: onPick,
+      child: Row(children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(Radii.m)),
+          alignment: Alignment.center,
+          child: AprsSymbolIcon(table: table, code: code, size: 44),
+        ),
+        const SizedBox(width: Gaps.l),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(resolved?.info.name ?? 'Bilinmeyen sembol', style: theme.textTheme.titleMedium),
+            Text(
+              'Beacon simgesi  ($table$code${overlay == null ? '' : ', katman $overlay'})',
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ]),
+        ),
+        Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+      ]),
     );
   }
 }
