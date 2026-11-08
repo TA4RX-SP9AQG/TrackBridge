@@ -8,14 +8,18 @@ import '../core/time_format.dart';
 import '../state/app_controller.dart';
 import '../state/models.dart';
 import 'app_theme.dart';
+import 'background_section.dart';
 import 'brand_lockup.dart';
 import 'permissions.dart';
 import 'widgets/ui_kit.dart';
 
 class ConnectPage extends StatefulWidget {
-  const ConnectPage({super.key, required this.controller});
+  const ConnectPage({super.key, required this.controller, this.background});
 
   final AppController controller;
+
+  /// Background operation (service switch + heartbeat); null in tests that do not need it.
+  final BackgroundTools? background;
 
   @override
   State<ConnectPage> createState() => _ConnectPageState();
@@ -167,6 +171,7 @@ class _ConnectPageState extends State<ConnectPage> {
                   ],
                 ]),
               ),
+            if (widget.background != null) BackgroundSection(controller: _c, tools: widget.background!),
           ],
         );
       },

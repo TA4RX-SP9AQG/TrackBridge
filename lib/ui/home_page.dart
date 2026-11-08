@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../state/app_controller.dart';
+import 'background_section.dart';
 import 'beacon_page.dart';
 import 'connect_page.dart';
 import 'map_page.dart';
@@ -8,9 +9,10 @@ import 'messages_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.controller});
+  const HomePage({super.key, required this.controller, this.background});
 
   final AppController controller;
+  final BackgroundTools? background;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -58,7 +60,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final pages = <Widget>[
-      ConnectPage(controller: controller),
+      ConnectPage(controller: controller, background: widget.background),
       _mapOpened ? MapPage(controller: controller) : const SizedBox.shrink(),
       MessagesPage(controller: controller),
       BeaconPage(controller: controller),

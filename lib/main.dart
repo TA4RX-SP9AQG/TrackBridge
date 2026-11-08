@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'background/background_coordinator.dart';
+import 'background/background_service.dart';
+import 'background/heartbeat.dart';
+import 'background/notification_background_service.dart';
 import 'ble/reactive_tracker_link.dart';
 import 'state/app_controller.dart';
 import 'state/settings_store.dart';
 import 'ui/app_theme.dart';
+import 'ui/background_section.dart';
 import 'ui/home_page.dart';
 import 'ui/permissions.dart';
 
@@ -16,13 +21,23 @@ Future<void> main() async {
     store: PrefsSettingsStore(),
   );
   await controller.init();
-  runApp(TrackBridgeApp(controller: controller));
+
+  // The Flutter engine is created by TrackBridgeApplication and outlives the activity, so this
+  // runs once per process. The heartbeat starts right away so the Bağlantı tab can show whether
+  // Dart kept running while the app was in the background.
+  final heartbeat = Heartbeat(store: PrefsHeartbeatStore());
+  await heartbeat.start();
+  final service = ServiceSwitchController(NotificationBackgroundService(), preflight: ensureBlePermissions);
+  BackgroundCoordinator(link: controller.link, service: service).attach();
+
+  runApp(TrackBridgeApp(controller: controller, background: BackgroundTools(heartbeat: heartbeat, service: service)));
 }
 
 class TrackBridgeApp extends StatelessWidget {
-  const TrackBridgeApp({super.key, required this.controller});
+  const TrackBridgeApp({super.key, required this.controller, this.background});
 
   final AppController controller;
+  final BackgroundTools? background;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +46,7 @@ class TrackBridgeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: HomePage(controller: controller),
+      home: HomePage(controller: controller, background: background),
     );
   }
 }
