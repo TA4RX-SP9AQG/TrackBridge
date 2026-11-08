@@ -55,4 +55,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.settings.positionSource, PositionSource.phone);
   });
+
+  testWidgets('an invalid tile URL is refused on save, a valid one is stored', (tester) async {
+    final controller = await openSettings(tester);
+    final field = find.widgetWithText(TextField, 'Harita karo adresi');
+    await tester.scrollUntilVisible(field, 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(field, 'http://insecure.example.com/{z}/{x}/{y}.png');
+    await tester.scrollUntilVisible(find.text('Kaydet'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Kaydet'));
+    await tester.pumpAndSettle();
+    expect(controller.settings.tileUrl, 'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+    expect(find.textContaining('Harita karo adresi'), findsWidgets);
+
+    await tester.pump(const Duration(seconds: 6)); // let the error snack bar leave the screen
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'https://tiles.example.com/{z}/{x}/{y}.png');
+    await tester.tap(find.text('Kaydet'));
+    await tester.pumpAndSettle();
+    expect(controller.settings.tileUrl, 'https://tiles.example.com/{z}/{x}/{y}.png');
+  });
 }

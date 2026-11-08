@@ -29,9 +29,14 @@ Many LoRa APRS trackers (for example the Heltec Wireless Tracker running the
 - Position beacon from a fixed position or the phone's GPS, with **APRS position ambiguity** (default about 2 km):
   the hidden digits are never put into the packet
 - Visual APRS symbol picker with the real icons, including overlay characters
+- **Map of the stations the tracker hears over the radio** (positions in uncompressed, compressed and Mic-E
+  format, plus objects and items), drawn with their APRS symbols. Tap a marker for the comment, speed, course,
+  altitude, distance and bearing from your position, and how it was heard. A **"Yol tarifi"** button opens
+  turn-by-turn navigation to it (Google Maps navigation, any map app, or the web page), and you can send
+  that station a message straight from the sheet
 - Every transmission is shown as the exact packet and needs your confirmation first
 
-Planned: map of stations heard over RF, ready-made messages and reminders for events such as #APRSThursday.
+Planned: background operation with message notifications, automatic and SmartBeaconing beacons, a map picker for the fixed position, ready-made messages and reminders for events such as #APRSThursday.
 
 ## Tested with
 
@@ -55,9 +60,11 @@ firmware authors, APRSdroid, aprs.fi, or the owners of the APRS name.
 
 ## Privacy
 
-No accounts, no analytics, no ads. The current version makes no network requests at all. Location is read from
-the phone only if you choose "phone GPS" as the beacon source, and it leaves the phone only inside a beacon you
-confirm.
+No accounts, no analytics, no ads. The only network traffic is **map tiles**, and only after you open the Harita
+tab: the tile server (OpenStreetMap by default) sees your IP address and the area you look at. "Yol tarifi" hands
+the station's coordinates to the navigation app you choose. Location is read from the phone only if you choose
+"phone GPS" as the beacon source, and it leaves the phone only inside a beacon you confirm. The map shows only
+what your own tracker heard on the radio; there is no internet (APRS-IS) feed.
 
 ## Build
 

@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/tile_url.dart';
+
 import 'models.dart';
 
 /// Persists [AppSettings]. The interface lets tests use an in-memory store.
@@ -33,6 +35,7 @@ class PrefsSettingsStore implements SettingsStore {
       noticeAccepted: p.getBool('${_prefix}noticeAccepted') ?? defaults.noticeAccepted,
       lastDeviceId: p.getString('${_prefix}lastDeviceId'),
       lastDeviceName: p.getString('${_prefix}lastDeviceName'),
+      tileUrl: _validTileUrl(p.getString('${_prefix}tileUrl')),
     );
   }
 
@@ -53,8 +56,11 @@ class PrefsSettingsStore implements SettingsStore {
       p.setBool('${_prefix}noticeAccepted', s.noticeAccepted),
       _setOrRemoveString(p, '${_prefix}lastDeviceId', s.lastDeviceId),
       _setOrRemoveString(p, '${_prefix}lastDeviceName', s.lastDeviceName),
+      p.setString('${_prefix}tileUrl', s.tileUrl),
     ]);
   }
+
+  String _validTileUrl(String? stored) => stored != null && isValidTileUrl(stored) ? stored : kDefaultTileUrl;
 
   Future<bool> _setOrRemoveDouble(SharedPreferences p, String key, double? v) =>
       v == null ? p.remove(key) : p.setDouble(key, v);

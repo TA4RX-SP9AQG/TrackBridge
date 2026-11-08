@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import '../core/tile_url.dart';
+
 enum PositionSource { manual, phone }
 
 /// User settings. Immutable; use [copyWith].
@@ -18,6 +20,7 @@ class AppSettings {
     this.noticeAccepted = false,
     this.lastDeviceId,
     this.lastDeviceName,
+    this.tileUrl = kDefaultTileUrl,
   });
 
   /// Our station, `CALL-SSID`.
@@ -43,6 +46,9 @@ class AppSettings {
   final String? lastDeviceId;
   final String? lastDeviceName;
 
+  /// Map tile URL template with {z}/{x}/{y}.
+  final String tileUrl;
+
   AppSettings copyWith({
     String? callsign,
     String? path,
@@ -57,6 +63,7 @@ class AppSettings {
     bool? noticeAccepted,
     String? lastDeviceId,
     String? lastDeviceName,
+    String? tileUrl,
   }) =>
       AppSettings(
         callsign: callsign ?? this.callsign,
@@ -72,6 +79,7 @@ class AppSettings {
         noticeAccepted: noticeAccepted ?? this.noticeAccepted,
         lastDeviceId: lastDeviceId ?? this.lastDeviceId,
         lastDeviceName: lastDeviceName ?? this.lastDeviceName,
+        tileUrl: tileUrl ?? this.tileUrl,
       );
 }
 

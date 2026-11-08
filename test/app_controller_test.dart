@@ -251,6 +251,64 @@ void main() {
       expect(controller.heard.first.tnc2, endsWith('status ${AppController.maxHeard + 19}')); // newest first
     });
 
+    test('a position packet becomes a station with symbol and comment', () async {
+      await build();
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', '!5213.78N/02100.73E[Walking in the park'));
+      await pump();
+      final s = controller.stations.single;
+      expect(s.displayName, 'N1TEST-7');
+      expect(s.position.lat, closeTo(52.229667, 1e-5));
+      expect((s.position.symbolTable, s.position.symbolCode), ('/', '['));
+      expect(s.position.comment, 'Walking in the park');
+      expect(s.viaDigipeater, isFalse);
+      expect(s.lastHeard, clock);
+    });
+
+    test('a digipeated position packet is marked as relayed and keeps its path', () async {
+      await build();
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', '!5213.78N/02100.73E-', path: ['SP9KKK-2*']));
+      await pump();
+      expect(controller.stations.single.viaDigipeater, isTrue);
+      expect(controller.stations.single.path, 'SP9KKK-2*');
+    });
+
+    test('a newer packet from the same station moves it instead of adding a duplicate', () async {
+      await build();
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', '!5213.78N/02100.73E-'));
+      await pump();
+      clock = clock.add(const Duration(minutes: 2));
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', '!5300.00N/02100.73E-'));
+      await pump();
+      expect(controller.stations, hasLength(1));
+      expect(controller.stations.single.position.lat, closeTo(53.0, 1e-6));
+      expect(controller.stations.single.packetCount, 2);
+    });
+
+    test('objects are listed under their own name', () async {
+      await build();
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', ';LEADER   *092345z4903.50N/07201.75W>088/036'));
+      await pump();
+      expect(controller.stations.single.displayName, 'LEADER');
+      expect(controller.stations.single.owner, 'N1TEST-7');
+    });
+
+    test('messages and status packets create no stations', () async {
+      await build();
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', ':SP9AQG-9 :hi{1'));
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', '>just a status'));
+      await pump();
+      expect(controller.stations, isEmpty);
+    });
+
+    test('stations are reported through notifyListeners', () async {
+      await build();
+      var notified = 0;
+      controller.addListener(() => notified++);
+      link.receive(frameBytes('N1TEST-7', 'APLOX1', '!5213.78N/02100.73E-'));
+      await pump();
+      expect(notified, greaterThan(0));
+    });
+
     test('garbage that is not an AX.25 frame is ignored', () async {
       await build();
       link.receive(Uint8List.fromList([kFend, 0x00, 1, 2, 3, kFend]));

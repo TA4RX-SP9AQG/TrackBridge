@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/painting.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:trackbridge/core/navigation_links.dart';
 import 'package:trackbridge/ble/tracker_link.dart';
 import 'package:trackbridge/core/ax25.dart';
 import 'package:trackbridge/core/kiss_codec.dart';
@@ -77,3 +80,32 @@ String decodeWritten(Uint8List kiss) {
 }
 
 Future<void> pump() => Future<void>.delayed(Duration.zero);
+
+/// Records the URIs that would be opened; `accepts` lists the schemes that "work".
+class FakeLauncher implements UriLauncher {
+  FakeLauncher({this.accepts = const {}, this.throwFor = const {}});
+
+  final Set<String> accepts;
+  final Set<String> throwFor;
+  final List<Uri> tried = [];
+
+  @override
+  Future<bool> launch(Uri uri) async {
+    tried.add(uri);
+    if (throwFor.contains(uri.scheme)) throw StateError('no activity');
+    return accepts.contains(uri.scheme);
+  }
+}
+
+// A 1x1 transparent PNG, so map tests never touch the network.
+final Uint8List _transparentPng = Uint8List.fromList(<int>[
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01,
+  0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41,
+  0x54, 0x78, 0x9C, 0x63, 0x60, 0x60, 0x60, 0x60, 0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0xA5, 0xF6, 0x45, 0x40, 0x00, 0x00,
+  0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+]);
+
+class EmptyTileProvider extends TileProvider {
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) => MemoryImage(_transparentPng);
+}

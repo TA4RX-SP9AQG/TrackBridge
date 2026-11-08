@@ -4,6 +4,7 @@ import '../core/aprs.dart';
 import '../core/ax25.dart';
 import '../state/app_controller.dart';
 import '../core/symbols.dart';
+import '../core/tile_url.dart';
 import '../state/models.dart';
 import 'beacon_page.dart' show ambiguityLabels;
 import 'symbol_picker.dart';
@@ -32,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _callsign = TextEditingController();
   final _path = TextEditingController();
   final _comment = TextEditingController();
+  final _tileUrl = TextEditingController();
   final _position = TextEditingController();
   late String _symbolTable;
   late String _symbolCode;
@@ -46,6 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _callsign.text = s.callsign;
     _path.text = s.path;
     _comment.text = s.comment;
+    _tileUrl.text = s.tileUrl;
     // A stored pair that is not a valid APRS symbol falls back to the default house icon.
     final valid = resolveSymbol(s.symbolTable, s.symbol) != null;
     _symbolTable = valid ? s.symbolTable : '/';
@@ -58,7 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    for (final c in [_callsign, _path, _comment, _position]) {
+    for (final c in [_callsign, _path, _comment, _position, _tileUrl]) {
       c.dispose();
     }
     super.dispose();
@@ -121,6 +124,11 @@ class _SettingsPageState extends State<SettingsPage> {
       _fail('Yorum yalnızca ASCII olmalı (| ve ~ yok) ve en fazla $kMaxCommentLength karakter olabilir.');
       return;
     }
+    final tileUrl = _tileUrl.text.trim();
+    if (!isValidTileUrl(tileUrl)) {
+      _fail('Harita karo adresi https:// ile başlamalı ve {z}, {x}, {y} içermeli.');
+      return;
+    }
     final current = widget.controller.settings;
     await widget.controller.updateSettings(AppSettings(
       callsign: callsign,
@@ -136,6 +144,7 @@ class _SettingsPageState extends State<SettingsPage> {
       noticeAccepted: current.noticeAccepted,
       lastDeviceId: current.lastDeviceId,
       lastDeviceName: current.lastDeviceName,
+      tileUrl: tileUrl,
     ));
     if (mounted) _fail('Kaydedildi.');
   }
@@ -207,6 +216,24 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
         const SizedBox(height: 12),
+        const SizedBox(height: 20),
+        Text('Harita', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _tileUrl,
+          keyboardType: TextInputType.url,
+          decoration: InputDecoration(
+            labelText: 'Harita karo adresi',
+            helperText: 'Varsayılan OpenStreetMap yalnızca geliştirme/test içindir. {z}/{x}/{y} gerekir.',
+            helperMaxLines: 3,
+            suffixIcon: IconButton(
+              tooltip: 'Varsayılana dön',
+              icon: const Icon(Icons.restore),
+              onPressed: () => setState(() => _tileUrl.text = kDefaultTileUrl),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save), label: const Text('Kaydet')),
       ]),
     );

@@ -39,6 +39,9 @@ dependencies:
   flutter_reactive_ble: ^5.6.0
   geolocator: ^14.1.2
   device_info_plus: ^13.3.0
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

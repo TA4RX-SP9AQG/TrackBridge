@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 
 import '../ble/tracker_link.dart';
 import '../core/aprs.dart';
+import '../core/aprs_position.dart';
 import '../core/ax25.dart';
 import '../core/kiss_codec.dart';
 import 'models.dart';
+import 'station_table.dart';
 import 'phone_position.dart';
 import 'settings_store.dart';
 
@@ -43,6 +45,7 @@ class AppController extends ChangeNotifier {
   KissDeframer _deframer = KissDeframer();
   List<HeardPacket> _heard = const <HeardPacket>[];
   Map<String, List<ChatMessage>> _conversations = const <String, List<ChatMessage>>{};
+  StationTable _stations = const StationTable();
   final Map<String, DateTime> _lastAck = <String, DateTime>{};
   final Set<String> _seenIncoming = <String>{};
   final List<DateTime> _ackTimes = <DateTime>[];
@@ -60,6 +63,9 @@ class AppController extends ChangeNotifier {
   /// Newest first.
   List<HeardPacket> get heard => _heard;
   Map<String, List<ChatMessage>> get conversations => _conversations;
+
+  /// Stations, objects and items whose position the tracker heard, newest first.
+  List<Station> get stations => _stations.all;
   String? get lastError => _lastError;
 
   Future<void> init() async {
@@ -217,6 +223,19 @@ class AppController extends ChangeNotifier {
     _heard = List<HeardPacket>.unmodifiable(
       <HeardPacket>[HeardPacket(tnc2: frame.toTnc2(), time: now), ..._heard].take(maxHeard),
     );
+    final position = parsePositionFrame(frame);
+    if (position != null) {
+      _stations = _stations.update(
+        Station.fromPacket(
+          sender: _plain(frame.source),
+          position: position,
+          heardAt: now,
+          path: frame.digipeaters.join(','),
+          viaDigipeater: frame.digipeaters.any((d) => d.repeated),
+        ),
+        now,
+      );
+    }
     final info = String.fromCharCodes(frame.info);
     final message = info.startsWith(':') ? parseMessage(info) : null;
     if (message != null && _isCallsignSet) _handleMessage(frame, message, now);

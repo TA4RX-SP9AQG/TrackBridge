@@ -10,6 +10,9 @@ The components below keep their own licences.
 | flutter_reactive_ble | BSD (Signify Holding) |
 | permission_handler | MIT (Baseflow) |
 | geolocator | MIT (Baseflow) |
+| flutter_map | BSD-3-Clause |
+| latlong2 | Apache-2.0 |
+| url_launcher | BSD-3-Clause (The Flutter Authors) |
 | shared_preferences | BSD-3-Clause (The Flutter Authors) |
 | device_info_plus | BSD-3-Clause (The Chromium Authors) |
 | cupertino_icons | MIT |
@@ -34,11 +37,12 @@ BLE service layout comes from observing the LoRa APRS Tracker firmware
 ([richonguzman/LoRa_APRS_Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker), GPL-3.0); no firmware
 source code is copied.
 
-## Map data (planned)
+## Map data
 
-Map tiles, when added, come from a tile server configured by the user. The OpenStreetMap public tile server is
-only suitable for development under its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
-Map data © OpenStreetMap contributors (ODbL).
+Map tiles come from a tile server configured in Settings. The default is the OpenStreetMap public tile server,
+which is only suitable for development and personal testing under its
+[tile usage policy](https://operations.osmfoundation.org/policies/tiles/) (valid User-Agent, attribution, no bulk
+or offline downloading). Map data © OpenStreetMap contributors (ODbL).
 
 ## Branding
 
