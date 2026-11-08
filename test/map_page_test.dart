@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:trackbridge/state/app_controller.dart';
 import 'package:trackbridge/state/models.dart';
 import 'package:trackbridge/ui/map_page.dart';
@@ -19,6 +21,7 @@ Future<MapTestSetup> openMap(
   WidgetTester tester, {
   AppSettings? settings,
   FakeLauncher? launcher,
+  MapController? mapController,
 }) async {
   await tester.runAsync(SymbolSheets.load);
   final link = FakeLink();
@@ -35,6 +38,7 @@ Future<MapTestSetup> openMap(
     home: MapPage(
       controller: controller,
       launcher: l,
+      mapController: mapController,
       tileProvider: EmptyTileProvider(),
       now: () => DateTime(2026, 11, 8, 12, 5),
     ),
@@ -46,7 +50,9 @@ Future<MapTestSetup> openMap(
 Future<void> hear(WidgetTester tester, MapTestSetup s, String call, String info, {List<String> path = const []}) async {
   s.link.receive(frameBytes(call, 'APLOX1', info, path: path));
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 50));
+  // The first heard station triggers an automatic "fit all" on the next frame, and flutter_map only
+  // draws markers inside the visible area, so wait for the camera to settle before looking for them.
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -144,5 +150,107 @@ void main() {
   testWidgets('attribution names OpenStreetMap for the default tile URL', (tester) async {
     await openMap(tester);
     expect(find.textContaining('OpenStreetMap'), findsWidgets);
+  });
+
+  group('"Tümünü göster" button', () {
+    bool contains(MapController c, double lat, double lon) => c.camera.visibleBounds.contains(LatLng(lat, lon));
+
+    testWidgets('brings every station and our own position back into view after the map was moved', (tester) async {
+      final ctl = MapController();
+      final s = await openMap(tester, mapController: ctl);
+      await hear(tester, s, 'N1TEST-7', '!5003.88N/01956.70E>'); // near Krakow
+      await hear(tester, s, 'N1TEST-8', '!5421.00N/01839.00E>'); // near Gdansk
+      await tester.pumpAndSettle();
+
+      ctl.move(const LatLng(0, 0), 3); // user wandered off
+      await tester.pumpAndSettle();
+      expect(contains(ctl, 50.06, 19.94), isFalse);
+
+      await tester.tap(find.byTooltip('Tümünü göster'));
+      await tester.pumpAndSettle();
+
+      expect(contains(ctl, 50.0647, 19.945), isTrue, reason: 'Krakow station');
+      expect(contains(ctl, 54.35, 18.65), isTrue, reason: 'Gdansk station');
+      expect(contains(ctl, 52.2297, 21.0122), isTrue, reason: 'own position');
+    });
+
+    testWidgets('works with a single station and no own position', (tester) async {
+      final ctl = MapController();
+      final s = await openMap(tester,
+          mapController: ctl, settings: const AppSettings(callsign: 'SP9AQG-9', noticeAccepted: true));
+      await hear(tester, s, 'N1TEST-7', '!5003.88N/01956.70E>');
+      await tester.pumpAndSettle();
+      ctl.move(const LatLng(0, 0), 3);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Tümünü göster'));
+      await tester.pumpAndSettle();
+      expect(contains(ctl, 50.0647, 19.945), isTrue);
+      expect(ctl.camera.zoom, greaterThan(5));
+    });
+
+    testWidgets('with nothing to show it leaves the map alone', (tester) async {
+      final ctl = MapController();
+      await openMap(tester, mapController: ctl, settings: const AppSettings(callsign: 'SP9AQG-9', noticeAccepted: true));
+      ctl.move(const LatLng(10, 10), 5);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Tümünü göster'));
+      await tester.pumpAndSettle();
+      expect(ctl.camera.zoom, 5);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('feedback and zoom controls', () {
+    testWidgets('"Tümünü göster" explains itself when there is nothing to show', (tester) async {
+      await openMap(tester, settings: const AppSettings(callsign: 'SP9AQG-9', noticeAccepted: true));
+      await tester.tap(find.byTooltip('Tümünü göster'));
+      await tester.pump();
+      expect(find.textContaining('Gösterilecek konum yok'), findsOneWidget);
+    });
+
+    testWidgets('zoom in and zoom out change the scale by one level and respect the limits', (tester) async {
+      final ctl = MapController();
+      await openMap(tester, mapController: ctl);
+      ctl.move(const LatLng(52, 21), 8);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Yakınlaştır'));
+      await tester.pumpAndSettle();
+      expect(ctl.camera.zoom, 9);
+      await tester.tap(find.byTooltip('Uzaklaştır'));
+      await tester.tap(find.byTooltip('Uzaklaştır'));
+      await tester.pumpAndSettle();
+      expect(ctl.camera.zoom, 7);
+
+      ctl.move(const LatLng(52, 21), 18);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Yakınlaştır'));
+      await tester.pumpAndSettle();
+      expect(ctl.camera.zoom, 18);
+
+      ctl.move(const LatLng(52, 21), 2);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Uzaklaştır'));
+      await tester.pumpAndSettle();
+      expect(ctl.camera.zoom, 2);
+    });
+
+    testWidgets('"Konumum" centres on the saved fixed position and is hidden without one', (tester) async {
+      final ctl = MapController();
+      await openMap(tester, mapController: ctl);
+      ctl.move(const LatLng(0, 0), 4);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Konumum'));
+      await tester.pumpAndSettle();
+      expect(ctl.camera.center.latitude, closeTo(52.2297, 1e-4));
+      expect(ctl.camera.center.longitude, closeTo(21.0122, 1e-4));
+      expect(ctl.camera.zoom, greaterThanOrEqualTo(11));
+    });
+
+    testWidgets('no "Konumum" button when no fixed position is set', (tester) async {
+      await openMap(tester, settings: const AppSettings(callsign: 'SP9AQG-9', noticeAccepted: true));
+      expect(find.byTooltip('Konumum'), findsNothing);
+      expect(find.byTooltip('Yakınlaştır'), findsOneWidget);
+    });
   });
 }

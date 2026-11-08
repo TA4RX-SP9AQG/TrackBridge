@@ -19,6 +19,7 @@ class MapPage extends StatefulWidget {
     this.launcher = const UrlLauncherAdapter(),
     this.tileProvider,
     this.now,
+    this.mapController,
   });
 
   final AppController controller;
@@ -28,6 +29,9 @@ class MapPage extends StatefulWidget {
   final TileProvider? tileProvider;
   final DateTime Function()? now;
 
+  /// Lets tests drive and inspect the camera.
+  final MapController? mapController;
+
   @override
   State<MapPage> createState() => _MapPageState();
 }
@@ -35,7 +39,7 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   static const String _userAgentPackage = 'com.sp9aqg.trackbridge';
 
-  final MapController _map = MapController();
+  late final MapController _map = widget.mapController ?? MapController();
   bool _fitted = false;
   String? _selectedId;
 
@@ -61,6 +65,33 @@ class _MapPageState extends State<MapPage> {
       padding: const EdgeInsets.fromLTRB(56, 96, 56, 96),
       maxZoom: 13,
     ));
+  }
+
+  /// The "show all" button. Says why when there is nothing to show instead of staying silent.
+  void _showAll(List<Station> stations) {
+    final points = _points(stations);
+    if (points.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Gösterilecek konum yok: henüz konumlu paket duyulmadı ve sabit konum ayarlanmadı.'),
+      ));
+      return;
+    }
+    _fitAll(points);
+  }
+
+  static const double _minZoom = 2;
+  static const double _maxZoom = 18;
+
+  void _zoomBy(double delta) {
+    final camera = _map.camera;
+    final zoom = (camera.zoom + delta).clamp(_minZoom, _maxZoom).toDouble();
+    if (zoom != camera.zoom) _map.move(camera.center, zoom);
+  }
+
+  void _goToOwn() {
+    final own = _own;
+    if (own == null) return;
+    _map.move(LatLng(own.lat, own.lon), _map.camera.zoom < 11 ? 11 : _map.camera.zoom);
   }
 
   void _fitOnceWhenStationsAppear(List<Station> stations) {
@@ -150,7 +181,7 @@ class _MapPageState extends State<MapPage> {
               IconButton(
                 tooltip: 'Tümünü göster',
                 icon: const Icon(Icons.zoom_out_map),
-                onPressed: () => _fitAll(_points(stations)),
+                onPressed: () => _showAll(stations),
               ),
             ],
           ),
@@ -164,8 +195,8 @@ class _MapPageState extends State<MapPage> {
                         ? LatLng(own.lat, own.lon)
                         : const LatLng(50.0, 15.0),
                 initialZoom: first != null || own != null ? 9 : 4,
-                minZoom: 2,
-                maxZoom: 18,
+                minZoom: _minZoom,
+                maxZoom: _maxZoom,
               ),
               children: [
                 TileLayer(
@@ -189,6 +220,33 @@ class _MapPageState extends State<MapPage> {
                       : 'harita: ${tileHost(url) ?? 'özel karo sunucusu'}'),
                 ),
               ],
+            ),
+            Positioned(
+              right: 12,
+              bottom: 48,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                if (own != null)
+                  FloatingActionButton.small(
+                    heroTag: null,
+                    tooltip: 'Konumum',
+                    onPressed: _goToOwn,
+                    child: const Icon(Icons.my_location),
+                  ),
+                if (own != null) const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: null,
+                  tooltip: 'Yakınlaştır',
+                  onPressed: () => _zoomBy(1),
+                  child: const Icon(Icons.add),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: null,
+                  tooltip: 'Uzaklaştır',
+                  onPressed: () => _zoomBy(-1),
+                  child: const Icon(Icons.remove),
+                ),
+              ]),
             ),
             if (stations.isEmpty)
               Positioned(
