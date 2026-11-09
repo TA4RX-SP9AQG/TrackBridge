@@ -15,6 +15,8 @@
     <!-- Background operation: a foreground service for a connected Bluetooth device, with a visible notification. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- Phone GPS for automatic beacons keeps running as a foreground service of type location. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:label="TrackBridge"

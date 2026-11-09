@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'auto_beacon.dart';
@@ -12,9 +13,48 @@ abstract class PhoneFixFeed {
   Future<void> stop();
 }
 
-/// [PhoneFixFeed] on top of the Geolocator position stream (foreground use: the app must be open).
+/// [PhoneFixFeed] on top of the Geolocator position stream.
+///
+/// On Android the stream runs inside a foreground service (type `location`) with an ongoing
+/// notification, so readings keep coming with the screen off or another app in front. The service
+/// is started while the app is visible (the user taps "start"), which is what Android allows
+/// without the separate "all the time" location permission.
 class GeolocatorFeed implements PhoneFixFeed {
+  GeolocatorFeed({this.notificationTitle = 'TrackBridge', this.notificationText = 'Otomatik beacon için konum kullanılıyor'});
+
+  final String notificationTitle;
+  final String notificationText;
   StreamSubscription<Position>? _sub;
+
+  @visibleForTesting
+  static LocationSettings buildSettings({required bool android, required String title, required String text}) {
+    if (!android) {
+      return const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5);
+    }
+    return AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+      foregroundNotificationConfig: ForegroundNotificationConfig(
+        notificationTitle: title,
+        notificationText: text,
+        notificationChannelName: 'Konum (otomatik beacon)',
+        setOngoing: true,
+      ),
+    );
+  }
+
+  @visibleForTesting
+  static PhoneFix toFix(Position p) {
+    final heading = p.heading;
+    return PhoneFix(
+      lat: p.latitude,
+      lon: p.longitude,
+      speedKmh: p.speed < 0 ? 0 : p.speed * 3.6,
+      headingDeg: heading >= 0 && heading <= 360 && p.speed > 0.5 ? heading : null,
+      accuracyM: p.accuracy,
+      time: p.timestamp,
+    );
+  }
 
   @override
   Future<String?> start(void Function(PhoneFix fix) onFix) async {
@@ -25,19 +65,12 @@ class GeolocatorFeed implements PhoneFixFeed {
     if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       return 'Konum izni verilmedi.';
     }
-    _sub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
-    ).listen((p) {
-      final heading = p.heading;
-      onFix(PhoneFix(
-        lat: p.latitude,
-        lon: p.longitude,
-        speedKmh: p.speed < 0 ? 0 : p.speed * 3.6,
-        headingDeg: heading >= 0 && heading <= 360 && p.speed > 0.5 ? heading : null,
-        accuracyM: p.accuracy,
-        time: p.timestamp,
-      ));
-    }, onError: (Object _) {});
+    final settings = buildSettings(
+      android: defaultTargetPlatform == TargetPlatform.android,
+      title: notificationTitle,
+      text: notificationText,
+    );
+    _sub = Geolocator.getPositionStream(locationSettings: settings).listen((p) => onFix(toFix(p)), onError: (Object _) {});
     return null;
   }
 

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../core/tile_url.dart';
+import 'wavelog_client.dart';
 
 enum PositionSource { manual, phone }
 
@@ -18,6 +19,10 @@ class AppSettings {
     this.manualLon,
     this.autoAck = true,
     this.carVoiceReply = false,
+    this.wavelogUrl = '',
+    this.wavelogKey = '',
+    this.wavelogProfileId = '',
+    this.wavelogFreqMhz = 433.775,
     this.noticeAccepted = false,
     this.lastDeviceId,
     this.lastDeviceName,
@@ -45,6 +50,17 @@ class AppSettings {
   /// Lets Android Auto send a spoken reply to a message you received (transmits without a dialog). Off by default.
   final bool carVoiceReply;
 
+  /// Wavelog logbook (optional). A QSO is only sent when the user taps "Wavelog'a kaydet".
+  final String wavelogUrl;
+
+  /// Read+write Wavelog API key. Kept in the app's private storage on this phone.
+  final String wavelogKey;
+  final String wavelogProfileId;
+  final double wavelogFreqMhz;
+
+  WavelogConfig get wavelogConfig =>
+      WavelogConfig(url: wavelogUrl, apiKey: wavelogKey, stationProfileId: wavelogProfileId, freqMhz: wavelogFreqMhz);
+
   /// The amateur-radio licence notice was accepted.
   final bool noticeAccepted;
   final String? lastDeviceId;
@@ -65,6 +81,10 @@ class AppSettings {
     double? manualLon,
     bool? autoAck,
     bool? carVoiceReply,
+    String? wavelogUrl,
+    String? wavelogKey,
+    String? wavelogProfileId,
+    double? wavelogFreqMhz,
     bool? noticeAccepted,
     String? lastDeviceId,
     String? lastDeviceName,
@@ -82,6 +102,10 @@ class AppSettings {
         manualLon: manualLon ?? this.manualLon,
         autoAck: autoAck ?? this.autoAck,
         carVoiceReply: carVoiceReply ?? this.carVoiceReply,
+        wavelogUrl: wavelogUrl ?? this.wavelogUrl,
+        wavelogKey: wavelogKey ?? this.wavelogKey,
+        wavelogProfileId: wavelogProfileId ?? this.wavelogProfileId,
+        wavelogFreqMhz: wavelogFreqMhz ?? this.wavelogFreqMhz,
         noticeAccepted: noticeAccepted ?? this.noticeAccepted,
         lastDeviceId: lastDeviceId ?? this.lastDeviceId,
         lastDeviceName: lastDeviceName ?? this.lastDeviceName,

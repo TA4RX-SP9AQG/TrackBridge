@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../ble/tracker_link.dart';
 import '../core/aprs.dart';
 import '../core/aprs_position.dart';
+import '../core/adif.dart';
 import '../core/ascii_text.dart';
 import '../core/ax25.dart';
 import '../core/kiss_codec.dart';
@@ -12,6 +13,8 @@ import 'message_notifier.dart';
 import 'message_store.dart';
 import 'models.dart';
 import 'station_table.dart';
+import 'wavelog_client.dart';
+import 'wavelog_preview.dart';
 import 'phone_position.dart';
 import 'settings_store.dart';
 
@@ -29,7 +32,9 @@ class AppController extends ChangeNotifier {
     DateTime Function()? now,
     MessageNotifier? notifier,
     this._messageStore,
-  })  : _notifier = notifier ?? const NoopMessageNotifier(),
+    WavelogClient? wavelog,
+  })  : wavelog = wavelog ?? WavelogClient(),
+        _notifier = notifier ?? const NoopMessageNotifier(),
         _positionProvider = positionProvider ?? readPhonePosition,
         _now = now ?? DateTime.now;
 
@@ -63,6 +68,9 @@ class AppController extends ChangeNotifier {
   final List<DateTime> _ackTimes = <DateTime>[];
   bool _disposed = false;
   final MessageNotifier _notifier;
+
+  /// Wavelog logbook client (only used when the user asks to log a conversation).
+  final WavelogClient wavelog;
   final MessageStore? _messageStore;
   final Map<String, int> _unread = <String, int>{};
   final List<DateTime> _carReplyTimes = <DateTime>[];
@@ -125,6 +133,44 @@ class AppController extends ChangeNotifier {
   void clearError() {
     _lastError = null;
     notifyListeners();
+  }
+
+  // ---- Wavelog ----
+
+  /// The QSO that would be logged for the conversation with [peer], or null when there is none.
+  WavelogQsoPreview? preview(String peer) {
+    final list = _conversations[peer];
+    if (list == null || list.isEmpty) return null;
+    final first = list.reduce((a, b) => a.time.isBefore(b.time) ? a : b);
+    final last = list.reduce((a, b) => a.time.isAfter(b.time) ? a : b);
+    final mine = _settings.callsign;
+    if (!isUsableCallsign(mine)) return null;
+    final adif = buildAdifRecord(
+      call: peer,
+      myCall: mine,
+      timeUtc: first.time.toUtc(),
+      freqMhz: _settings.wavelogFreqMhz,
+      comment: 'LoRa APRS mesajlasma (${list.length} mesaj), TrackBridge',
+    );
+    return WavelogQsoPreview(peer: peer, timeUtc: first.time.toUtc(), lastUtc: last.time.toUtc(), messageCount: list.length, adif: adif);
+  }
+
+  /// Sends the conversation with [peer] to the configured Wavelog logbook as a packet-radio QSO.
+  Future<WavelogResult> logToWavelog(String peer) async {
+    final config = _settings.wavelogConfig;
+    if (!config.isComplete) {
+      return const WavelogResult(false, 'Önce Ayarlar > Wavelog bölümünü doldurun.');
+    }
+    final WavelogQsoPreview? p;
+    try {
+      p = preview(peer);
+    } on FormatException catch (e) {
+      return WavelogResult(false, e.message);
+    }
+    if (p == null) {
+      return const WavelogResult(false, 'Bu istasyonla mesajlaşma yok ya da çağrı işareti ayarlı değil.');
+    }
+    return wavelog.logQso(config, p.adif);
   }
 
   // ---- read state ----

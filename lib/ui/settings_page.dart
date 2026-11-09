@@ -8,6 +8,7 @@ import '../state/app_controller.dart';
 import '../state/models.dart';
 import 'app_theme.dart';
 import 'beacon_page.dart' show ambiguityLabels;
+import '../state/wavelog_client.dart';
 import 'permissions.dart';
 import 'symbol_picker.dart';
 import 'symbol_widget.dart';
@@ -41,6 +42,10 @@ class _SettingsPageState extends State<SettingsPage> {
   final _comment = TextEditingController();
   final _tileUrl = TextEditingController();
   final _position = TextEditingController();
+  final _wlUrl = TextEditingController();
+  final _wlKey = TextEditingController();
+  final _wlProfile = TextEditingController();
+  final _wlFreq = TextEditingController();
   late String _symbolTable;
   late String _symbolCode;
   late int _ambiguity;
@@ -56,6 +61,10 @@ class _SettingsPageState extends State<SettingsPage> {
     _path.text = s.path;
     _comment.text = s.comment;
     _tileUrl.text = s.tileUrl;
+    _wlUrl.text = s.wavelogUrl;
+    _wlKey.text = s.wavelogKey;
+    _wlProfile.text = s.wavelogProfileId;
+    _wlFreq.text = s.wavelogFreqMhz.toString();
     // A stored pair that is not a valid APRS symbol falls back to the default house icon.
     final valid = resolveSymbol(s.symbolTable, s.symbol) != null;
     _symbolTable = valid ? s.symbolTable : '/';
@@ -69,7 +78,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    for (final c in [_callsign, _path, _comment, _position, _tileUrl]) {
+    for (final c in [_callsign, _path, _comment, _position, _tileUrl, _wlUrl, _wlKey, _wlProfile, _wlFreq]) {
       c.dispose();
     }
     super.dispose();
@@ -93,6 +102,20 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _applyNow(AppSettings Function(AppSettings saved) change) {
     final c = widget.controller;
     return c.updateSettings(change(c.settings));
+  }
+
+  Future<void> _testWavelog() async {
+    final config = WavelogConfig(
+      url: _wlUrl.text,
+      apiKey: _wlKey.text,
+      stationProfileId: _wlProfile.text,
+      freqMhz: double.tryParse(_wlFreq.text.trim().replaceAll(',', '.')) ?? 0,
+    );
+    _fail('Bağlantı deneniyor...');
+    final result = await widget.controller.wavelog.testConnection(config);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    _fail(result.message);
   }
 
   Future<void> _checkNotifications() async {
@@ -142,6 +165,25 @@ class _SettingsPageState extends State<SettingsPage> {
       _fail('Harita karo adresi https:// ile başlamalı ve {z}, {x}, {y} içermeli.');
       return;
     }
+    final wlUrl = _wlUrl.text.trim();
+    final wlProfile = _wlProfile.text.trim();
+    final wlFreq = double.tryParse(_wlFreq.text.trim().replaceAll(',', '.'));
+    final wlTouched = wlUrl.isNotEmpty || _wlKey.text.trim().isNotEmpty || wlProfile.isNotEmpty;
+    if (wlTouched) {
+      final problem = WavelogConfig.urlProblem(wlUrl);
+      if (problem != null) {
+        _fail('Wavelog: $problem');
+        return;
+      }
+      if (int.tryParse(wlProfile) == null) {
+        _fail('Wavelog istasyon profil numarası bir sayı olmalı.');
+        return;
+      }
+    }
+    if (wlFreq == null || wlFreq <= 0) {
+      _fail('Wavelog frekansı MHz olarak girilmeli (örn. 433.775).');
+      return;
+    }
     final current = widget.controller.settings;
     await widget.controller.updateSettings(AppSettings(
       callsign: callsign,
@@ -155,6 +197,10 @@ class _SettingsPageState extends State<SettingsPage> {
       manualLon: point?.lon,
       autoAck: _autoAck,
       carVoiceReply: _carVoiceReply,
+      wavelogUrl: wlUrl,
+      wavelogKey: _wlKey.text.trim(),
+      wavelogProfileId: wlProfile,
+      wavelogFreqMhz: wlFreq,
       noticeAccepted: current.noticeAccepted,
       lastDeviceId: current.lastDeviceId,
       lastDeviceName: current.lastDeviceName,
@@ -281,6 +327,52 @@ class _SettingsPageState extends State<SettingsPage> {
               onPressed: _checkNotifications,
               icon: const Icon(Icons.notifications_active_outlined),
               label: const Text('Bildirim iznini kontrol et'),
+            ),
+          ]),
+        ),
+        const SectionHeader('Wavelog', subtitle: 'Mesajlaşmaları günlüğünüze QSO olarak kaydedin (isteğe bağlı)'),
+        SurfaceCard(
+          child: Column(children: [
+            TextField(
+              controller: _wlUrl,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(labelText: 'Wavelog adresi', hintText: 'https://log.ornek.com'),
+            ),
+            const SizedBox(height: Gaps.l),
+            TextField(
+              controller: _wlKey,
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'API anahtarı (okuma+yazma)',
+                helperText: 'Yalnızca bu telefonda saklanır; yalnızca siz "Wavelog\'a kaydet" dediğinizde kullanılır.',
+                helperMaxLines: 3,
+              ),
+            ),
+            const SizedBox(height: Gaps.l),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _wlProfile,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'İstasyon profil no'),
+                ),
+              ),
+              const SizedBox(width: Gaps.m),
+              Expanded(
+                child: TextField(
+                  controller: _wlFreq,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Frekans (MHz)'),
+                ),
+              ),
+            ]),
+            const SizedBox(height: Gaps.l),
+            OutlinedButton.icon(
+              onPressed: _testWavelog,
+              icon: const Icon(Icons.wifi_tethering_rounded),
+              label: const Text('Bağlantıyı dene'),
             ),
           ]),
         ),

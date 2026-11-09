@@ -6,6 +6,7 @@ import '../state/app_controller.dart';
 import '../state/models.dart';
 import 'app_theme.dart';
 import 'confirm_transmit.dart';
+import 'wavelog_dialog.dart';
 import 'widgets/ui_kit.dart';
 
 class MessagesPage extends StatelessWidget {
@@ -170,6 +171,14 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
+        actions: [
+          if (widget.controller.settings.wavelogConfig.isComplete)
+            IconButton(
+              tooltip: "Wavelog'a kaydet",
+              icon: const Icon(Icons.menu_book_outlined),
+              onPressed: () => logToWavelogWithConfirmation(context, widget.controller, widget.peer),
+            ),
+        ],
         title: Row(children: [
           InitialsAvatar(widget.peer, size: 36),
           const SizedBox(width: Gaps.m),

@@ -178,7 +178,7 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
                 const SizedBox(height: Gaps.s),
                 Text(
                   'Hızınıza göre sıklaşır, duruyorsanız seyrekleşir, dönüşlerde hemen yayınlar. '
-                  'Telefon GPS\'i gerekir ve uygulama açıkken çalışır.',
+                  'Telefon GPS\'i gerekir. Çalışırken kalıcı bir konum bildirimi gösterir ve ekran kapalıyken de sürer.',
                   style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
