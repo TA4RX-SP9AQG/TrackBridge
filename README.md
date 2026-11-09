@@ -35,6 +35,7 @@ Many LoRa APRS trackers (for example the Heltec Wireless Tracker running the
   turn-by-turn navigation to it (Google Maps navigation, any map app, or the web page), and you can send
   that station a message straight from the sheet
 - Every transmission is shown as the exact packet and needs your confirmation first
+- **Automatic beacons**: fixed interval, or SmartBeaconing (HamHUD algorithm: beacons more often when you move faster, rarely when standing, and at corners) with walking / bicycle / car profiles. Always off at start, needs a connected tracker, stops if the connection drops, 60 s minimum gap, every automatic beacon is logged
 - **Android Auto:** incoming messages are shown and read aloud in the car; an optional spoken reply (off by default, see [docs/ANDROID_AUTO.md](docs/ANDROID_AUTO.md) for its limits)
 
 Planned: background operation with message notifications, automatic and SmartBeaconing beacons, a map picker for the fixed position, ready-made messages and reminders for events such as #APRSThursday.

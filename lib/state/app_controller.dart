@@ -237,24 +237,28 @@ class AppController extends ChangeNotifier {
 
   /// Builds a position beacon. With ambiguity > 0 the hidden digits are never
   /// part of the packet.
-  Future<OutgoingPacket> buildBeaconPacket() async {
+  Future<OutgoingPacket> buildBeaconPacket({GeoPoint? position}) async {
     final GeoPoint point;
-    switch (_settings.positionSource) {
-      case PositionSource.manual:
-        final lat = _settings.manualLat;
-        final lon = _settings.manualLon;
-        if (lat == null || lon == null) {
-          throw const FormatException('Ayarlar\'dan sabit konum girin ya da telefon GPS\'ini seçin.');
-        }
-        point = GeoPoint(lat, lon);
-      case PositionSource.phone:
-        try {
-          point = await _positionProvider();
-        } on StateError catch (e) {
-          throw FormatException(e.message);
-        } on Object catch (e) {
-          throw FormatException('Konum alınamadı: $e'); // timeouts, platform errors
-        }
+    if (position != null) {
+      point = position;
+    } else {
+      switch (_settings.positionSource) {
+        case PositionSource.manual:
+          final lat = _settings.manualLat;
+          final lon = _settings.manualLon;
+          if (lat == null || lon == null) {
+            throw const FormatException('Ayarlar\'dan sabit konum girin ya da telefon GPS\'ini seçin.');
+          }
+          point = GeoPoint(lat, lon);
+        case PositionSource.phone:
+          try {
+            point = await _positionProvider();
+          } on StateError catch (e) {
+            throw FormatException(e.message);
+          } on Object catch (e) {
+            throw FormatException('Konum alınamadı: $e'); // timeouts, platform errors
+          }
+      }
     }
     return _packet(buildPositionInfo(
       lat: point.lat,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'background/background_coordinator.dart';
@@ -7,6 +9,8 @@ import 'background/native_bridge.dart';
 import 'background/notification_background_service.dart';
 import 'ble/reactive_tracker_link.dart';
 import 'state/app_controller.dart';
+import 'state/auto_beacon.dart';
+import 'state/phone_fix_feed.dart';
 import 'state/message_store.dart';
 import 'state/settings_store.dart';
 import 'ui/app_theme.dart';
@@ -37,14 +41,25 @@ Future<void> main() async {
   final service = ServiceSwitchController(NotificationBackgroundService(), preflight: ensureBlePermissions);
   BackgroundCoordinator(link: controller.link, service: service, onForeground: controller.setAppForeground).attach();
 
-  runApp(TrackBridgeApp(controller: controller, background: BackgroundTools(heartbeat: heartbeat, service: service)));
+  // Automatic beacons: always off at start. The timer only drives it while the user has switched it on.
+  final auto = AutoBeaconController(app: controller);
+  Timer.periodic(const Duration(seconds: 5), (_) => unawaited(auto.tick()));
+
+  runApp(TrackBridgeApp(
+    controller: controller,
+    background: BackgroundTools(heartbeat: heartbeat, service: service),
+    auto: auto,
+    feed: GeolocatorFeed(),
+  ));
 }
 
 class TrackBridgeApp extends StatelessWidget {
-  const TrackBridgeApp({super.key, required this.controller, this.background});
+  const TrackBridgeApp({super.key, required this.controller, this.background, this.auto, this.feed});
 
   final AppController controller;
   final BackgroundTools? background;
+  final AutoBeaconController? auto;
+  final PhoneFixFeed? feed;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +68,7 @@ class TrackBridgeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: HomePage(controller: controller, background: background),
+      home: HomePage(controller: controller, background: background, auto: auto, feed: feed),
     );
   }
 }

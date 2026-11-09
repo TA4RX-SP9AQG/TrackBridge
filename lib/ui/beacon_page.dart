@@ -4,6 +4,9 @@ import '../core/symbols.dart';
 import '../state/app_controller.dart';
 import '../state/models.dart';
 import 'app_theme.dart';
+import '../state/auto_beacon.dart';
+import '../state/phone_fix_feed.dart';
+import 'auto_beacon_card.dart';
 import 'confirm_transmit.dart';
 import 'symbol_widget.dart';
 import 'widgets/ui_kit.dart';
@@ -12,9 +15,13 @@ import 'widgets/ui_kit.dart';
 const List<String> ambiguityLabels = <String>['~20 m', '~200 m', '~2 km', '~20 km', '~200 km'];
 
 class BeaconPage extends StatefulWidget {
-  const BeaconPage({super.key, required this.controller});
+  const BeaconPage({super.key, required this.controller, this.auto, this.feed});
 
   final AppController controller;
+
+  /// Automatic beacons; the card is hidden when null (tests).
+  final AutoBeaconController? auto;
+  final PhoneFixFeed? feed;
 
   @override
   State<BeaconPage> createState() => _BeaconPageState();
@@ -115,6 +122,8 @@ class _BeaconPageState extends State<BeaconPage> {
                 ),
               ]),
             ),
+            if (widget.auto != null && widget.feed != null)
+              AutoBeaconCard(controller: widget.controller, auto: widget.auto!, feed: widget.feed!),
             const SizedBox(height: Gaps.xl),
             FilledButton.icon(
               style: transmitButtonStyle(context),
