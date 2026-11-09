@@ -8,6 +8,7 @@ import '../state/app_controller.dart';
 import '../state/models.dart';
 import 'app_theme.dart';
 import 'beacon_page.dart' show ambiguityLabels;
+import 'permissions.dart';
 import 'symbol_picker.dart';
 import 'symbol_widget.dart';
 import 'widgets/ui_kit.dart';
@@ -23,9 +24,12 @@ import 'widgets/ui_kit.dart';
 }
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key, required this.controller});
+  const SettingsPage({super.key, required this.controller, this.requestNotificationPermission});
 
   final AppController controller;
+
+  /// Asks for the notification permission; replaced in tests.
+  final Future<bool> Function()? requestNotificationPermission;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -42,6 +46,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late int _ambiguity;
   late PositionSource _source;
   late bool _autoAck;
+  late bool _carVoiceReply;
 
   @override
   void initState() {
@@ -59,6 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _ambiguity = s.ambiguity;
     _source = s.positionSource;
     _autoAck = s.autoAck;
+    _carVoiceReply = s.carVoiceReply;
   }
 
   @override
@@ -87,6 +93,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _applyNow(AppSettings Function(AppSettings saved) change) {
     final c = widget.controller;
     return c.updateSettings(change(c.settings));
+  }
+
+  Future<void> _checkNotifications() async {
+    final granted = await (widget.requestNotificationPermission ?? ensureNotificationPermission)();
+    if (!mounted) return;
+    _fail(granted ? 'Bildirim izni verildi.' : 'Bildirim izni verilmedi. Android ayarlarından TrackBridge için bildirimleri açın.');
   }
 
   void _fail(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -142,6 +154,7 @@ class _SettingsPageState extends State<SettingsPage> {
       manualLat: point?.lat,
       manualLon: point?.lon,
       autoAck: _autoAck,
+      carVoiceReply: _carVoiceReply,
       noticeAccepted: current.noticeAccepted,
       lastDeviceId: current.lastDeviceId,
       lastDeviceName: current.lastDeviceName,
@@ -239,6 +252,37 @@ class _SettingsPageState extends State<SettingsPage> {
               _applyNow((s) => s.copyWith(autoAck: v));
             },
           ),
+        ),
+        const SectionHeader('Android Auto', subtitle: 'Arabada mesajlar sesli okunur'),
+        SurfaceCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              'Arabanın Android Auto ekranı size gelen APRS mesajlarını bildirim olarak gösterir ve sesli okur. '
+              'Yalnızca Android Auto açıkken gelen mesajlar görünür; geçmiş mesajlar yalnızca uygulamada kalır.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: Gaps.m),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Arabadan sesli yanıt'),
+              subtitle: const Text(
+                'Açıkken, arabada dikte ettiğiniz yanıt telsizle yayınlanır ve onay penceresi olmadan gider. '
+                'Yalnızca size mesaj atan istasyona, en fazla 67 karakter, Türkçe harfler sade ASCII harflere çevrilerek, '
+                '20 sn arayla gönderilir. Yayından siz sorumlusunuz.',
+              ),
+              value: _carVoiceReply,
+              onChanged: (v) {
+                setState(() => _carVoiceReply = v);
+                _applyNow((s) => s.copyWith(carVoiceReply: v));
+              },
+            ),
+            const SizedBox(height: Gaps.s),
+            OutlinedButton.icon(
+              onPressed: _checkNotifications,
+              icon: const Icon(Icons.notifications_active_outlined),
+              label: const Text('Bildirim iznini kontrol et'),
+            ),
+          ]),
         ),
         const SectionHeader('Harita'),
         SurfaceCard(

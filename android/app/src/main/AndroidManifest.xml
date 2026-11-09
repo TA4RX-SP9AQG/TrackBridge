@@ -47,6 +47,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Android Auto: messaging notifications (read aloud, voice reply). -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <!-- Reply and mark-as-read actions of message notifications. No UI. -->
+        <receiver
+            android:name=".CarMessageReceiver"
+            android:exported="false" />
         <!-- flutter_local_notifications foreground service. Not sticky (set in code); stays alive when the
              task is swiped away so the tracker connection survives, and is visible as a notification. -->
         <service

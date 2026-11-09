@@ -237,6 +237,21 @@ void main() {
       expect(link.info.isConnected, isTrue);
     });
 
+    test('the foreground flag follows the lifecycle', () async {
+      final link = FakeLink()..setConnected(true);
+      final seen = <bool>[];
+      final coordinator = BackgroundCoordinator(
+        link: link,
+        service: ServiceSwitchController(FakeBackgroundService()),
+        onForeground: seen.add,
+      );
+      await coordinator.handleLifecycle(AppLifecycleState.resumed);
+      await coordinator.handleLifecycle(AppLifecycleState.paused);
+      await coordinator.handleLifecycle(AppLifecycleState.inactive);
+      await coordinator.handleLifecycle(AppLifecycleState.resumed);
+      expect(seen, [true, false, false, true]);
+    });
+
     test('going to the background (paused/hidden/inactive) never disconnects', () async {
       final link = FakeLink()..setConnected(true);
       final coordinator = BackgroundCoordinator(link: link, service: ServiceSwitchController(FakeBackgroundService()));

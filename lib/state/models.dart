@@ -17,6 +17,7 @@ class AppSettings {
     this.manualLat,
     this.manualLon,
     this.autoAck = true,
+    this.carVoiceReply = false,
     this.noticeAccepted = false,
     this.lastDeviceId,
     this.lastDeviceName,
@@ -41,6 +42,9 @@ class AppSettings {
   /// Answer messages addressed to us with an ack (the only automatic transmission).
   final bool autoAck;
 
+  /// Lets Android Auto send a spoken reply to a message you received (transmits without a dialog). Off by default.
+  final bool carVoiceReply;
+
   /// The amateur-radio licence notice was accepted.
   final bool noticeAccepted;
   final String? lastDeviceId;
@@ -60,6 +64,7 @@ class AppSettings {
     double? manualLat,
     double? manualLon,
     bool? autoAck,
+    bool? carVoiceReply,
     bool? noticeAccepted,
     String? lastDeviceId,
     String? lastDeviceName,
@@ -76,6 +81,7 @@ class AppSettings {
         manualLat: manualLat ?? this.manualLat,
         manualLon: manualLon ?? this.manualLon,
         autoAck: autoAck ?? this.autoAck,
+        carVoiceReply: carVoiceReply ?? this.carVoiceReply,
         noticeAccepted: noticeAccepted ?? this.noticeAccepted,
         lastDeviceId: lastDeviceId ?? this.lastDeviceId,
         lastDeviceName: lastDeviceName ?? this.lastDeviceName,
@@ -121,6 +127,36 @@ class ChatMessage {
   final DateTime time;
   final String? messageId;
   final DeliveryState state;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'd': direction.name,
+        'p': peer,
+        't': text,
+        'ms': time.millisecondsSinceEpoch,
+        if (messageId != null) 'id': messageId,
+        's': state.name,
+      };
+
+  /// Throws [FormatException] when [json] is not a stored message.
+  factory ChatMessage.fromJson(Map<String, Object?> json) {
+    final direction = MessageDirection.values.where((v) => v.name == json['d']).firstOrNull;
+    final state = DeliveryState.values.where((v) => v.name == json['s']).firstOrNull;
+    final peer = json['p'];
+    final text = json['t'];
+    final ms = json['ms'];
+    if (direction == null || state == null || peer is! String || text is! String || ms is! int) {
+      throw const FormatException('Kayıtlı mesaj okunamadı.');
+    }
+    final id = json['id'];
+    return ChatMessage(
+      direction: direction,
+      peer: peer,
+      text: text,
+      time: DateTime.fromMillisecondsSinceEpoch(ms),
+      messageId: id is String ? id : null,
+      state: state,
+    );
+  }
 
   ChatMessage withState(DeliveryState next) => ChatMessage(
         direction: direction,

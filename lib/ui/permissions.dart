@@ -1,6 +1,13 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// Asks for the permission to show notifications (Android 13+; older versions always allow them).
+/// Message notifications, and with them the Android Auto integration, need it.
+Future<bool> ensureNotificationPermission() async {
+  if (await androidSdkInt() < 33) return true;
+  return (await Permission.notification.request()).isGranted;
+}
+
 /// Android API level of this phone; 31 (Android 12) is assumed if it cannot be read.
 Future<int> androidSdkInt() async {
   try {

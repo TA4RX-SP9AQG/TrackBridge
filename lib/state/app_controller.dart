@@ -4,8 +4,12 @@ import 'package:flutter/foundation.dart';
 import '../ble/tracker_link.dart';
 import '../core/aprs.dart';
 import '../core/aprs_position.dart';
+import '../core/ascii_text.dart';
 import '../core/ax25.dart';
 import '../core/kiss_codec.dart';
+import 'car_reply.dart';
+import 'message_notifier.dart';
+import 'message_store.dart';
 import 'models.dart';
 import 'station_table.dart';
 import 'phone_position.dart';
@@ -23,7 +27,10 @@ class AppController extends ChangeNotifier {
     required this._store,
     PositionProvider? positionProvider,
     DateTime Function()? now,
-  })  : _positionProvider = positionProvider ?? readPhonePosition,
+    MessageNotifier? notifier,
+    this._messageStore,
+  })  : _notifier = notifier ?? const NoopMessageNotifier(),
+        _positionProvider = positionProvider ?? readPhonePosition,
         _now = now ?? DateTime.now;
 
   static const int maxHeard = 200;
@@ -35,6 +42,11 @@ class AppController extends ChangeNotifier {
   static const Duration _ackWindow = Duration(minutes: 10);
   static const Duration _ackMinSpacing = Duration(seconds: 5);
   static const int _maxRemembered = 500;
+
+  /// Spoken replies from the car: at most this many per window, and never closer than the minimum gap.
+  static const int maxCarRepliesPerWindow = 10;
+  static const Duration _carReplyWindow = Duration(minutes: 10);
+  static const Duration _carReplyMinGap = Duration(seconds: 20);
 
   final TrackerLink _link;
   final SettingsStore _store;
@@ -50,6 +62,12 @@ class AppController extends ChangeNotifier {
   final Set<String> _seenIncoming = <String>{};
   final List<DateTime> _ackTimes = <DateTime>[];
   bool _disposed = false;
+  final MessageNotifier _notifier;
+  final MessageStore? _messageStore;
+  final Map<String, int> _unread = <String, int>{};
+  final List<DateTime> _carReplyTimes = <DateTime>[];
+  bool _appInForeground = false;
+  String? _activeChat;
   StreamSubscription<LinkInfo>? _infoSub;
   StreamSubscription<Uint8List>? _incomingSub;
   LinkStatus _lastStatus = LinkStatus.disconnected;
@@ -68,8 +86,24 @@ class AppController extends ChangeNotifier {
   List<Station> get stations => _stations.all;
   String? get lastError => _lastError;
 
+  /// Unread incoming messages from [peer] (0 when read or unknown).
+  int unreadCount(String peer) => _unread[peer] ?? 0;
+  int get totalUnread => _unread.values.fold<int>(0, (a, b) => a + b);
+
   Future<void> init() async {
     _settings = await _store.load();
+    final stored = await _messageStore?.load();
+    if (stored != null && stored.isNotEmpty) {
+      _conversations = Map<String, List<ChatMessage>>.unmodifiable({
+        for (final e in stored.entries) e.key: List<ChatMessage>.unmodifiable(e.value),
+      });
+      // Messages already stored count as seen, so a digipeated repeat after a restart is not shown again.
+      for (final e in stored.entries) {
+        for (final m in e.value) {
+          if (m.direction == MessageDirection.incoming && m.messageId != null) _seenIncoming.add('${e.key}/${m.messageId}');
+        }
+      }
+    }
     _nextMessageId = _now().millisecondsSinceEpoch ~/ 1000 % 90000 + 1;
     _infoSub = _link.infoStream.listen(_onLinkInfo);
     _incomingSub = _link.incoming.listen(_onBytes);
@@ -91,6 +125,62 @@ class AppController extends ChangeNotifier {
   void clearError() {
     _lastError = null;
     notifyListeners();
+  }
+
+  // ---- read state ----
+
+  /// Set by the app lifecycle: true while the UI is visible.
+  void setAppForeground(bool value) => _appInForeground = value;
+
+  /// The conversation currently on screen, or null. Opening one marks it read.
+  void setActiveChat(String? peer) {
+    _activeChat = peer;
+    if (peer != null) unawaited(markRead(peer));
+  }
+
+  /// Marks the conversation read and removes its notification (also in the car).
+  Future<void> markRead(String peer) async {
+    final had = _unread.remove(peer);
+    if (had == null) return;
+    notifyListeners();
+    await _notifier.clear(peer);
+  }
+
+  // ---- spoken reply from the car ----
+
+  /// Sends a reply dictated in the car. There is no confirmation dialog, so it is limited: off by
+  /// default (`carVoiceReply`), only to a station that messaged us, plain ASCII, [kMaxMessageLength]
+  /// characters, at least 20 s apart and at most [maxCarRepliesPerWindow] per 10 minutes.
+  Future<CarReplyResult> replyFromCar(String peer, String text) async {
+    if (!_settings.carVoiceReply) return const CarReplyResult.refused(CarReplyRefusal.disabled);
+    if (!isUsableCallsign(_settings.callsign)) return const CarReplyResult.refused(CarReplyRefusal.noCallsign);
+    final String key;
+    try {
+      key = normalizeCallsign(peer);
+    } on FormatException {
+      return const CarReplyResult.refused(CarReplyRefusal.unknownPeer);
+    }
+    final heardFromPeer = (_conversations[key] ?? const <ChatMessage>[]).any((m) => m.direction == MessageDirection.incoming);
+    if (!heardFromPeer) return const CarReplyResult.refused(CarReplyRefusal.unknownPeer);
+    if (!_link.info.isConnected) return const CarReplyResult.refused(CarReplyRefusal.notConnected);
+    final ascii = toAprsAscii(text);
+    if (ascii.isEmpty) return const CarReplyResult.refused(CarReplyRefusal.emptyText);
+
+    final now = _now();
+    _carReplyTimes.removeWhere((t) => now.difference(t) > _carReplyWindow);
+    if (_carReplyTimes.isNotEmpty && now.difference(_carReplyTimes.last) < _carReplyMinGap) {
+      return const CarReplyResult.refused(CarReplyRefusal.tooSoon);
+    }
+    if (_carReplyTimes.length >= maxCarRepliesPerWindow) return const CarReplyResult.refused(CarReplyRefusal.tooMany);
+
+    try {
+      final packet = buildMessagePacket(to: key, text: ascii);
+      await transmit(packet);
+      _carReplyTimes.add(now);
+      return CarReplyResult.sent(ascii);
+    } on Object {
+      return const CarReplyResult.refused(CarReplyRefusal.failed);
+    }
   }
 
   // ---- building packets ----
@@ -280,6 +370,7 @@ class AppController extends ChangeNotifier {
         time: now,
         messageId: id,
       ));
+      _announceIncoming(sender, message.text, now, id);
     }
     if (id != null && _settings.autoAck) {
       final last = _lastAck[key];
@@ -289,6 +380,14 @@ class AppController extends ChangeNotifier {
         unawaited(_sendAck(sender, id));
       }
     }
+  }
+
+  /// Counts the message as unread and shows it outside the app, unless the user is looking at that chat.
+  void _announceIncoming(String peer, String text, DateTime time, String? id) {
+    if (_appInForeground && _activeChat == peer) return;
+    final unread = (_unread[peer] ?? 0) + 1;
+    _unread[peer] = unread;
+    unawaited(_notifier.showIncoming(peer: peer, text: text, time: time, unread: unread, messageId: id));
   }
 
   /// Global limit: minimum spacing between acks and a maximum per window.
@@ -318,6 +417,7 @@ class AppController extends ChangeNotifier {
       ..._conversations,
       message.peer: List<ChatMessage>.unmodifiable([...current, message]),
     });
+    _persist();
     notifyListeners();
   }
 
@@ -346,6 +446,12 @@ class AppController extends ChangeNotifier {
       ..._conversations,
       peer: List<ChatMessage>.unmodifiable(updated),
     });
+    _persist();
+  }
+
+  void _persist() {
+    final store = _messageStore;
+    if (store != null) unawaited(store.save(_conversations));
   }
 
   @override

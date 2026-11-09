@@ -48,5 +48,8 @@ flutter {
 }
 
 dependencies {
+    // NotificationCompat.MessagingStyle, Person and RemoteInput for the Android Auto message notifications.
+    // 1.18.0 is the newest androidx.core that Android Gradle Plugin 9.0.1 accepts.
+    implementation("androidx.core:core-ktx:1.18.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

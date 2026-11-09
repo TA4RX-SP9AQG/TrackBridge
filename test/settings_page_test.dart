@@ -7,14 +7,18 @@ import 'package:trackbridge/ui/symbol_widget.dart';
 
 import 'helpers/fakes.dart';
 
-Future<AppController> openSettings(WidgetTester tester, {AppSettings? settings}) async {
+Future<AppController> openSettings(
+  WidgetTester tester, {
+  AppSettings? settings,
+  Future<bool> Function()? requestNotifications,
+}) async {
   await tester.runAsync(SymbolSheets.load);
   final controller = AppController(
     link: FakeLink(),
     store: MemoryStore(settings ?? const AppSettings(callsign: 'SP9AQG-9', noticeAccepted: true)),
   );
   await controller.init();
-  await tester.pumpWidget(MaterialApp(home: SettingsPage(controller: controller)));
+  await tester.pumpWidget(MaterialApp(home: SettingsPage(controller: controller, requestNotificationPermission: requestNotifications)));
   await tester.pumpAndSettle();
   return controller;
 }
@@ -75,5 +79,47 @@ void main() {
     await tester.tap(find.text('Kaydet'));
     await tester.pumpAndSettle();
     expect(controller.settings.tileUrl, 'https://tiles.example.com/{z}/{x}/{y}.png');
+  });
+
+  group('Android Auto section', () {
+    Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+      await tester.scrollUntilVisible(finder, 300, scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('voice reply is off by default and the switch is saved immediately', (tester) async {
+      final controller = await openSettings(tester);
+      expect(controller.settings.carVoiceReply, isFalse);
+      final tile = find.widgetWithText(SwitchListTile, 'Arabadan sesli yanıt');
+      await scrollTo(tester, tile);
+      expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      expect(controller.settings.carVoiceReply, isTrue);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      expect(controller.settings.carVoiceReply, isFalse);
+    });
+
+    testWidgets('the section warns that a spoken reply transmits without a dialog', (tester) async {
+      await openSettings(tester);
+      final warning = find.textContaining('onay penceresi olmadan');
+      await scrollTo(tester, warning);
+      expect(warning, findsOneWidget);
+    });
+
+    testWidgets('the notification permission button reports the outcome', (tester) async {
+      var asked = 0;
+      await openSettings(tester, requestNotifications: () async {
+        asked++;
+        return false;
+      });
+      final button = find.text('Bildirim iznini kontrol et');
+      await scrollTo(tester, button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(asked, 1);
+      expect(find.textContaining('verilmedi'), findsWidgets);
+    });
   });
 }

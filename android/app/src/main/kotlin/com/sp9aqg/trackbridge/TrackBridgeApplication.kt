@@ -19,6 +19,8 @@ class TrackBridgeApplication : Application() {
         val engine = FlutterEngine(this)
         engine.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
         FlutterEngineCache.getInstance().put(ENGINE_ID, engine)
+        // Message notifications (phone and Android Auto) talk to Dart over this engine, with or without an activity.
+        CarMessaging.install(this, engine)
     }
 
     companion object {

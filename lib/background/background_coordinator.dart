@@ -9,10 +9,13 @@ import 'background_service.dart';
 /// closing the app no longer tears the Bluetooth connection down by itself. Without
 /// background mode the old behaviour is kept on purpose: closing the app disconnects.
 class BackgroundCoordinator {
-  BackgroundCoordinator({required this.link, required this.service});
+  BackgroundCoordinator({required this.link, required this.service, this.onForeground});
 
   final TrackerLink link;
   final ServiceSwitchController service;
+
+  /// Called with true when the app is in front (resumed) and false otherwise.
+  final void Function(bool inForeground)? onForeground;
 
   AppLifecycleListener? _listener;
 
@@ -27,6 +30,7 @@ class BackgroundCoordinator {
   }
 
   Future<void> handleLifecycle(AppLifecycleState state) async {
+    onForeground?.call(state == AppLifecycleState.resumed);
     if (state == AppLifecycleState.detached && !service.enabled) {
       await link.disconnect();
     }

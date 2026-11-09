@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'background/background_coordinator.dart';
 import 'background/background_service.dart';
 import 'background/heartbeat.dart';
+import 'background/native_bridge.dart';
 import 'background/notification_background_service.dart';
 import 'ble/reactive_tracker_link.dart';
 import 'state/app_controller.dart';
+import 'state/message_store.dart';
 import 'state/settings_store.dart';
 import 'ui/app_theme.dart';
 import 'ui/background_section.dart';
@@ -16,11 +18,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Android 11 and older only deliver BLE scan results while location is on.
   final needsLocation = await androidSdkInt() < 31;
+  // Message notifications (phone and Android Auto) are built by native code; the bridge connects them.
+  final bridge = NativeMessageBridge();
   final controller = AppController(
     link: ReactiveTrackerLink(requireLocationServices: needsLocation),
     store: PrefsSettingsStore(),
+    notifier: bridge,
+    messageStore: PrefsMessageStore(),
   );
   await controller.init();
+  bridge.attach(controller);
 
   // The Flutter engine is created by TrackBridgeApplication and outlives the activity, so this
   // runs once per process. The heartbeat starts right away so the Bağlantı tab can show whether
@@ -28,7 +35,7 @@ Future<void> main() async {
   final heartbeat = Heartbeat(store: PrefsHeartbeatStore());
   await heartbeat.start();
   final service = ServiceSwitchController(NotificationBackgroundService(), preflight: ensureBlePermissions);
-  BackgroundCoordinator(link: controller.link, service: service).attach();
+  BackgroundCoordinator(link: controller.link, service: service, onForeground: controller.setAppForeground).attach();
 
   runApp(TrackBridgeApp(controller: controller, background: BackgroundTools(heartbeat: heartbeat, service: service)));
 }

@@ -137,7 +137,15 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _input = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Looking at this chat: its messages are read and need no notification.
+    widget.controller.setActiveChat(widget.peer);
+  }
+
+  @override
   void dispose() {
+    widget.controller.setActiveChat(null);
     _input.dispose();
     super.dispose();
   }

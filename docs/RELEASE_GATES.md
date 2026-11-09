@@ -12,4 +12,6 @@ published in a store.
 | Tocall | Packets use the firmware's `APLRT1` destination | Request an own APRS tocall |
 | Package size | Debug APK is about 180 MB | Build per-ABI release APKs / an app bundle |
 | Name, logo, trademarks | Not checked against store listings or trademarks | Check before submitting |
+| Android Auto voice reply | A spoken reply transmits without a dialog | Keep it off by default, document it in the listing and data-safety form; re-check Google's messaging-app requirements for the release |
+| Android Auto map | Not implemented; would need the Car App Library (POI category), a Play developer account and Google's approval | Decide before any store release whether to offer it at all |
 | Store policy text | Radio transmission app | Describe the licence requirement and the confirmation-before-transmit behaviour in the listing |
