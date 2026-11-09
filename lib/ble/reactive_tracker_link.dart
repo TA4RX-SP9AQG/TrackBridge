@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 import 'tracker_link.dart';
+import '../l10n/app_strings.dart';
 
 /// [TrackerLink] on top of flutter_reactive_ble.
 class ReactiveTrackerLink implements TrackerLink {
@@ -113,7 +114,7 @@ class ReactiveTrackerLink implements TrackerLink {
       await _ble.discoverAllServices(id);
       final services = await _ble.getDiscoveredServices(id);
       if (!services.any((s) => s.id == _service)) {
-        throw StateError('Cihazda KISS servisi bulunamadı (bu bir LoRa tracker değil mi, ya da KISS modu kapalı?).');
+        throw StateError(t('Cihazda KISS servisi bulunamadı (bu bir LoRa tracker değil mi, ya da KISS modu kapalı?).'));
       }
       if (generation != _generation) return;
       final previous = _notifySub;
@@ -156,7 +157,7 @@ class ReactiveTrackerLink implements TrackerLink {
     final delay = Duration(seconds: min(pow(2, attempt).toInt(), _maxBackoffSeconds));
     _emit(_info.copyWith(
       status: LinkStatus.connecting,
-      error: reason ?? 'Bağlantı koptu.',
+      error: reason ?? t('Bağlantı koptu.'),
       attempt: attempt,
     ));
     _retryTimer?.cancel();
@@ -197,12 +198,12 @@ class ReactiveTrackerLink implements TrackerLink {
   Future<void> _writeNow(Uint8List bytes) async {
     final generation = _generation;
     final id = _info.deviceId;
-    if (!_info.isConnected || id == null) throw StateError('Tracker bağlı değil.');
+    if (!_info.isConnected || id == null) throw StateError(t('Tracker bağlı değil.'));
     final chunkSize = max(20, _info.mtu - 3);
     final characteristic = _characteristic(id, kKissWriteUuid);
     for (var i = 0; i < bytes.length; i += chunkSize) {
       if (generation != _generation || !_info.isConnected) {
-        throw StateError('Bağlantı koptu, paket gönderilemedi.');
+        throw StateError(t('Bağlantı koptu, paket gönderilemedi.'));
       }
       final end = min(i + chunkSize, bytes.length);
       await _ble.writeCharacteristicWithResponse(characteristic, value: bytes.sublist(i, end));

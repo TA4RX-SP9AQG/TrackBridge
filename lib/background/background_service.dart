@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../l10n/app_strings.dart';
 
 enum BackgroundStartResult { started, permissionDenied, failed }
 
@@ -44,7 +45,7 @@ class ServiceSwitchController extends ChangeNotifier {
       if (value) {
         if (preflight != null && !await preflight!()) {
           _enabled = false;
-          _error = 'Bluetooth izni verilmedi. Servis, bağlı bir cihaz için çalıştığından Android bu izni ister.';
+          _error = t('Bluetooth izni verilmedi. Servis, bağlı bir cihaz için çalıştığından Android bu izni ister.');
           return;
         }
         final result = await service.start(title: title, body: body);
@@ -52,8 +53,8 @@ class ServiceSwitchController extends ChangeNotifier {
         _error = switch (result) {
           BackgroundStartResult.started => null,
           BackgroundStartResult.permissionDenied =>
-            'Bildirim izni verilmedi. Arka planda çalışmak için kalıcı bir bildirim gerekir; Android ayarlarından izin verin.',
-          BackgroundStartResult.failed => 'Arka plan servisi başlatılamadı.',
+            t('Bildirim izni verilmedi. Arka planda çalışmak için kalıcı bir bildirim gerekir; Android ayarlarından izin verin.'),
+          BackgroundStartResult.failed => t('Arka plan servisi başlatılamadı.'),
         };
       } else {
         await service.stop();
@@ -61,7 +62,7 @@ class ServiceSwitchController extends ChangeNotifier {
       }
     } on Object catch (e) {
       _enabled = false;
-      _error = 'Arka plan servisi hatası: $e';
+      _error = t('Arka plan servisi hatası: {e}', {'e': e});
     } finally {
       _busy = false;
       notifyListeners();

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'auto_beacon.dart';
+import '../l10n/app_strings.dart';
 
 /// Source of phone GPS readings for automatic beacons. An interface so the UI can be tested.
 abstract class PhoneFixFeed {
@@ -20,10 +21,13 @@ abstract class PhoneFixFeed {
 /// is started while the app is visible (the user taps "start"), which is what Android allows
 /// without the separate "all the time" location permission.
 class GeolocatorFeed implements PhoneFixFeed {
-  GeolocatorFeed({this.notificationTitle = 'TrackBridge', this.notificationText = 'Otomatik beacon için konum kullanılıyor'});
+  GeolocatorFeed({this.notificationTitle = 'TrackBridge', String? notificationText}) : _notificationText = notificationText;
 
   final String notificationTitle;
-  final String notificationText;
+  final String? _notificationText;
+
+  /// Resolved when the service starts, so it follows the current interface language.
+  String get notificationText => _notificationText ?? t('Otomatik beacon için konum kullanılıyor');
   StreamSubscription<Position>? _sub;
 
   @visibleForTesting
@@ -59,11 +63,11 @@ class GeolocatorFeed implements PhoneFixFeed {
   @override
   Future<String?> start(void Function(PhoneFix fix) onFix) async {
     await stop();
-    if (!await Geolocator.isLocationServiceEnabled()) return 'Telefonun konum servisi kapalı.';
+    if (!await Geolocator.isLocationServiceEnabled()) return t('Telefonun konum servisi kapalı.');
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      return 'Konum izni verilmedi.';
+      return t('Konum izni verilmedi.');
     }
     final settings = buildSettings(
       android: defaultTargetPlatform == TargetPlatform.android,

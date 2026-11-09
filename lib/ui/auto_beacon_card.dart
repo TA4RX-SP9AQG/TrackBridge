@@ -10,6 +10,7 @@ import '../state/models.dart';
 import '../state/phone_fix_feed.dart';
 import 'app_theme.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 /// Switch, settings and status for automatic beacons.
 class AutoBeaconCard extends StatefulWidget {
@@ -28,7 +29,7 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
 
   AutoBeaconMode _mode = AutoBeaconMode.interval;
   int _minutes = 10;
-  String _profile = 'Yürüyüş';
+  String _profile = t('Yürüyüş');
   bool _starting = false;
 
   AutoBeaconController get _auto => widget.auto;
@@ -56,36 +57,36 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
     final exact = s.ambiguity == 0;
     final what = _mode == AutoBeaconMode.interval
         ? 'her $_minutes dakikada bir'
-        : 'hareketinize göre (hızlandıkça ve dönüşlerde daha sık)';
+        : t('hareketinize göre (hızlandıkça ve dönüşlerde daha sık)');
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
         final scheme = Theme.of(context).colorScheme;
         return AlertDialog(
           icon: Icon(Icons.cell_tower_rounded, color: scheme.tertiary, size: 32),
-          title: const Text('Otomatik beacon başlatılsın mı?'),
+          title: Text(t('Otomatik beacon başlatılsın mı?')),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Konumunuz $what telsizle yayınlanacak. İnternete düşerse herkese açık görünür.'),
+            Text(t('Konumunuz {what} telsizle yayınlanacak. İnternete düşerse herkese açık görünür.', {'what': what})),
             const SizedBox(height: Gaps.m),
             if (exact)
               Text(
-                'Konum belirsizliği 0: tam konumunuz yayınlanır.',
+                t('Konum belirsizliği 0: tam konumunuz yayınlanır.'),
                 style: TextStyle(color: scheme.error, fontWeight: FontWeight.w600),
               )
             else
-              Text('Konum belirsizliği ${s.ambiguity}: gizlenen basamaklar yayınlanmaz.'),
+              Text(t('Konum belirsizliği {v1}: gizlenen basamaklar yayınlanmaz.', {'v1': s.ambiguity})),
             const SizedBox(height: Gaps.m),
-            const Text(
-              'Tracker bağlantısı koparsa durur ve kendiliğinden yeniden başlamaz. Uygulama kapanınca da kapalı açılır.',
+            Text(
+              t('Tracker bağlantısı koparsa durur ve kendiliğinden yeniden başlamaz. Uygulama kapanınca da kapalı açılır.'),
             ),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t('Vazgeç'))),
             FilledButton.icon(
               style: transmitButtonStyle(context),
               onPressed: () => Navigator.pop(context, true),
               icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Başlat'),
+              label: Text(t('Başlat')),
             ),
           ],
         );
@@ -125,12 +126,12 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
 
   String _explain(StartResult r) => switch (r) {
         StartResult.started => '',
-        StartResult.notConnected => 'Önce Bağlantı sekmesinden tracker\'a bağlanın.',
+        StartResult.notConnected => t('Önce Bağlantı sekmesinden tracker\'a bağlanın.'),
         StartResult.noPosition => _phoneSource
-            ? 'Güncel GPS konumu alınamadı. Açık havada, uygulama açıkken tekrar deneyin.'
+            ? t('Güncel GPS konumu alınamadı. Açık havada, uygulama açıkken tekrar deneyin.')
             : 'Ayarlar\'dan sabit konum girin.',
-        StartResult.badConfig => 'Ayarlar geçersiz (aralık en az 1 dakika olmalı).',
-        StartResult.needsPhoneGps => 'Akıllı mod hareket gerektirir: Ayarlar\'da konum kaynağı olarak "Telefon GPS"ini seçin.',
+        StartResult.badConfig => t('Ayarlar geçersiz (aralık en az 1 dakika olmalı).'),
+        StartResult.needsPhoneGps => t('Akıllı mod hareket gerektirir: Ayarlar\'da konum kaynağı olarak "Telefon GPS"ini seçin.'),
       };
 
   @override
@@ -144,8 +145,8 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
         final connected = widget.controller.linkInfo.isConnected;
         final last = _auto.lastSent;
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          SectionHeader('Otomatik beacon', subtitle: 'Her oturumda elle başlatılır', trailing: StatusPill(
-            running ? 'Açık' : 'Kapalı',
+          SectionHeader(t('Otomatik beacon'), subtitle: t('Her oturumda elle başlatılır'), trailing: StatusPill(
+            running ? t('Açık') : t('Kapalı'),
             icon: running ? Icons.sensors_rounded : Icons.sensors_off_rounded,
             tone: running ? PillTone.accent : PillTone.neutral,
           )),
@@ -153,9 +154,9 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SegmentedButton<AutoBeaconMode>(
                 expandedInsets: EdgeInsets.zero,
-                segments: const [
-                  ButtonSegment(value: AutoBeaconMode.interval, label: Text('Sabit aralık'), icon: Icon(Icons.timer_outlined)),
-                  ButtonSegment(value: AutoBeaconMode.smart, label: Text('Akıllı'), icon: Icon(Icons.directions_walk_rounded)),
+                segments: [
+                  ButtonSegment(value: AutoBeaconMode.interval, label: Text(t('Sabit aralık')), icon: Icon(Icons.timer_outlined)),
+                  ButtonSegment(value: AutoBeaconMode.smart, label: Text(t('Akıllı')), icon: Icon(Icons.directions_walk_rounded)),
                 ],
                 selected: {_mode},
                 onSelectionChanged: running ? null : (v) => setState(() => _mode = v.first),
@@ -164,21 +165,20 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
               if (_mode == AutoBeaconMode.interval)
                 DropdownButtonFormField<int>(
                   initialValue: _minutes,
-                  decoration: const InputDecoration(labelText: 'Aralık'),
-                  items: [for (final m in _intervalMinutes) DropdownMenuItem(value: m, child: Text('$m dakika'))],
+                  decoration: InputDecoration(labelText: t('Aralık')),
+                  items: [for (final m in _intervalMinutes) DropdownMenuItem(value: m, child: Text(t('{m} dakika', {'m': m})))],
                   onChanged: running ? null : (v) => setState(() => _minutes = v ?? _minutes),
                 )
               else ...[
                 DropdownButtonFormField<String>(
                   initialValue: _profile,
-                  decoration: const InputDecoration(labelText: 'Profil'),
+                  decoration: InputDecoration(labelText: t('Profil')),
                   items: [for (final p in SmartBeaconParams.presets.keys) DropdownMenuItem(value: p, child: Text(p))],
                   onChanged: running ? null : (v) => setState(() => _profile = v ?? _profile),
                 ),
                 const SizedBox(height: Gaps.s),
                 Text(
-                  'Hızınıza göre sıklaşır, duruyorsanız seyrekleşir, dönüşlerde hemen yayınlar. '
-                  'Telefon GPS\'i gerekir. Çalışırken kalıcı bir konum bildirimi gösterir ve ekran kapalıyken de sürer.',
+                  t('Hızınıza göre sıklaşır, duruyorsanız seyrekleşir, dönüşlerde hemen yayınlar. Telefon GPS\'i gerekir. Çalışırken kalıcı bir konum bildirimi gösterir ve ekran kapalıyken de sürer.'),
                   style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
@@ -187,7 +187,7 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
                 OutlinedButton.icon(
                   onPressed: () => _auto.stop(),
                   icon: const Icon(Icons.stop_rounded),
-                  label: const Text('Durdur'),
+                  label: Text(t('Durdur')),
                 )
               else
                 FilledButton.icon(
@@ -196,16 +196,16 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
                   icon: _starting
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Otomatik beacon\'ı başlat'),
+                  label: Text(t('Otomatik beacon\'ı başlat')),
                 ),
               const SizedBox(height: Gaps.m),
               Text(_auto.status, style: theme.textTheme.bodyMedium),
               if (last != null)
-                Text('Son beacon: ${formatClockSeconds(last)}',
+                Text(t('Son beacon: {v1}', {'v1': formatClockSeconds(last)}),
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               if (_auto.log.isNotEmpty) ...[
                 const Divider(height: Gaps.xl),
-                Text('Son otomatik beaconlar', style: theme.textTheme.titleSmall),
+                Text(t('Son otomatik beaconlar'), style: theme.textTheme.titleSmall),
                 const SizedBox(height: Gaps.xs),
                 for (final e in _auto.log.take(5))
                   Padding(

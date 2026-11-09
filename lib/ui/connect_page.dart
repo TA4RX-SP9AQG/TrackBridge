@@ -12,6 +12,7 @@ import 'background_section.dart';
 import 'brand_lockup.dart';
 import 'permissions.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 class ConnectPage extends StatefulWidget {
   const ConnectPage({super.key, required this.controller, this.background});
@@ -41,7 +42,7 @@ class _ConnectPageState extends State<ConnectPage> {
     final granted = await ensureBlePermissions();
     if (!mounted) return;
     if (!granted) {
-      setState(() => _scanError = 'Bluetooth izni verilmedi. Uygulama ayarlarından izin verin.');
+      setState(() => _scanError = t('Bluetooth izni verilmedi. Uygulama ayarlarından izin verin.'));
       return;
     }
     await _stopScan();
@@ -53,7 +54,7 @@ class _ConnectPageState extends State<ConnectPage> {
     _scanSub = _c.link.scan().listen(
       (t) => setState(() => _found[t.id] = t),
       onError: (Object e) => setState(() {
-        _scanError = 'Tarama hatası: $e';
+        _scanError = t('Tarama hatası: {e}', {'e': e});
         _scanning = false;
       }),
     );
@@ -111,21 +112,21 @@ class _ConnectPageState extends State<ConnectPage> {
             FilledButton.icon(
               onPressed: _scanning ? _stopScan : _startScan,
               icon: Icon(_scanning ? Icons.stop_rounded : Icons.search_rounded),
-              label: Text(_scanning ? 'Taramayı durdur' : 'Tracker ara'),
+              label: Text(_scanning ? t('Taramayı durdur') : 'Tracker ara'),
             ),
             if (info.status != LinkStatus.disconnected) ...[
               const SizedBox(height: Gaps.s),
               OutlinedButton.icon(
                 onPressed: _c.disconnect,
                 icon: const Icon(Icons.link_off_rounded),
-                label: const Text('Bağlantıyı kes'),
+                label: Text(t('Bağlantıyı kes')),
               ),
             ] else if (_c.settings.lastDeviceId != null) ...[
               const SizedBox(height: Gaps.s),
               FilledButton.tonalIcon(
                 onPressed: _connectLast,
                 icon: const Icon(Icons.history_rounded),
-                label: Text('Son cihaz: ${_c.settings.lastDeviceName ?? ''}'),
+                label: Text(t('Son cihaz: {v1}', {'v1': _c.settings.lastDeviceName ?? ''})),
               ),
             ],
             if (_scanError != null)
@@ -142,7 +143,7 @@ class _ConnectPageState extends State<ConnectPage> {
                 ),
               ),
             if (found.isNotEmpty) ...[
-              const SectionHeader('Bulunan cihazlar'),
+              SectionHeader(t('Bulunan cihazlar')),
               for (final t in found)
                 Padding(
                   padding: const EdgeInsets.only(bottom: Gaps.s),
@@ -150,15 +151,15 @@ class _ConnectPageState extends State<ConnectPage> {
                 ),
             ],
             SectionHeader(
-              'Duyulan paketler',
+              t('Duyulan paketler'),
               subtitle: heard.isEmpty ? null : '${heard.length} paket · telsizle duyulanlar',
             ),
             if (heard.isEmpty)
-              const SurfaceCard(
+              SurfaceCard(
                 child: EmptyState(
                   icon: Icons.graphic_eq_rounded,
-                  title: 'Henüz paket yok',
-                  message: 'Tracker\'a bağlıyken telsizle duyduğu her şey burada görünür.',
+                  title: t('Henüz paket yok'),
+                  message: t('Tracker\'a bağlıyken telsizle duyduğu her şey burada görünür.'),
                 ),
               )
             else
@@ -190,8 +191,8 @@ class _AdapterBanner extends StatelessWidget {
       stream: stream,
       builder: (context, snapshot) {
         final text = switch (snapshot.data) {
-          AdapterState.off => 'Telefonun Bluetooth\'u kapalı. Açın.',
-          AdapterState.unauthorized => 'Bluetooth izni yok. Uygulama ayarlarından izin verin.',
+          AdapterState.off => t('Telefonun Bluetooth\'u kapalı. Açın.'),
+          AdapterState.unauthorized => t('Bluetooth izni yok. Uygulama ayarlarından izin verin.'),
           AdapterState.unavailable => 'Bu telefon Bluetooth LE desteklemiyor.',
           _ => null,
         };
@@ -220,13 +221,13 @@ class _LinkHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, title, subtitle) = switch (info.status) {
-      LinkStatus.connected => (Icons.bluetooth_connected_rounded, 'Bağlı', info.deviceName ?? 'Tracker'),
+      LinkStatus.connected => (Icons.bluetooth_connected_rounded, t('Bağlı'), info.deviceName ?? 'Tracker'),
       LinkStatus.connecting => (
           Icons.bluetooth_searching_rounded,
-          info.attempt > 0 ? 'Yeniden bağlanıyor (${info.attempt}. deneme)' : 'Bağlanıyor...',
+          info.attempt > 0 ? t('Yeniden bağlanıyor ({v1}. deneme)', {'v1': info.attempt}) : t('Bağlanıyor...'),
           info.deviceName ?? 'Tracker',
         ),
-      LinkStatus.disconnected => (Icons.bluetooth_disabled_rounded, 'Bağlı değil', 'Tracker\'a bağlanmak için aramayı başlatın'),
+      LinkStatus.disconnected => (Icons.bluetooth_disabled_rounded, t('Bağlı değil'), t('Tracker\'a bağlanmak için aramayı başlatın')),
     };
     return BrandHeroCard(
       icon: icon,
@@ -235,8 +236,8 @@ class _LinkHero extends StatelessWidget {
       muted: info.status == LinkStatus.disconnected,
       footer: info.isConnected
           ? Wrap(spacing: Gaps.s, runSpacing: Gaps.s, children: [
-              HeroChip('MTU ${info.mtu}', icon: Icons.speed_rounded),
-              const HeroChip('KISS servisi', icon: Icons.lan_outlined),
+              HeroChip(t('MTU {v1}', {'v1': info.mtu}), icon: Icons.speed_rounded),
+              HeroChip(t('KISS servisi'), icon: Icons.lan_outlined),
             ])
           : null,
     );
@@ -266,7 +267,7 @@ class _DeviceTile extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(tracker.name, style: Theme.of(context).textTheme.titleMedium),
             Text(
-              '${tracker.id} · ${tracker.rssi} dBm',
+              t('{v1} · {v2} dBm', {'v1': tracker.id, 'v2': tracker.rssi}),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ]),
@@ -318,8 +319,8 @@ class _PacketRow extends StatelessWidget {
                 if (summary.viaDigipeater) ...[
                   const SizedBox(width: Gaps.s),
                   Tooltip(
-                    message: 'Digipeater üzerinden duyuldu',
-                    child: Icon(Icons.repeat_rounded, size: 16, color: scheme.onSurfaceVariant, semanticLabel: 'digipeater üzerinden'),
+                    message: t('Digipeater üzerinden duyuldu'),
+                    child: Icon(Icons.repeat_rounded, size: 16, color: scheme.onSurfaceVariant, semanticLabel: t('digipeater üzerinden')),
                   ),
                 ],
                 const Spacer(),

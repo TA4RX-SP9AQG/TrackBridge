@@ -1,5 +1,6 @@
 import 'aprs.dart';
 import 'ax25.dart';
+import '../l10n/app_strings.dart';
 
 /// `<NAME:length>value`. Empty values produce no field.
 String adifField(String name, String value) => value.isEmpty ? '' : '<$name:${value.length}>$value';
@@ -31,7 +32,7 @@ String _asciiOnly(String s) {
 String _baseCall(String call, String what) {
   final trimmed = call.trim();
   if (!isUsableCallsign(trimmed.isEmpty ? '' : trimmed.replaceAll('*', ''))) {
-    throw FormatException('Geçersiz $what: "$call"');
+    throw FormatException(t('Geçersiz {what}: "{call}"', {'what': what, 'call': call}));
   }
   return Ax25Address.parse(trimmed).callsign;
 }
@@ -45,12 +46,12 @@ String buildAdifRecord({
   required double freqMhz,
   String comment = '',
 }) {
-  final other = _baseCall(call, 'çağrı işareti');
-  final mine = _baseCall(myCall, 'kendi çağrı işaretiniz');
-  final t = timeUtc.toUtc();
+  final other = _baseCall(call, t('çağrı işareti'));
+  final mine = _baseCall(myCall, t('kendi çağrı işaretiniz'));
+  final utc = timeUtc.toUtc();
   String two(int v) => v.toString().padLeft(2, '0');
-  final date = '${t.year.toString().padLeft(4, '0')}${two(t.month)}${two(t.day)}';
-  final time = '${two(t.hour)}${two(t.minute)}${two(t.second)}';
+  final date = '${utc.year.toString().padLeft(4, '0')}${two(utc.month)}${two(utc.day)}';
+  final time = '${two(utc.hour)}${two(utc.minute)}${two(utc.second)}';
   final freq = freqMhz.toStringAsFixed(3);
   return [
     adifField('CALL', other),

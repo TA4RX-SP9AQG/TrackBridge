@@ -17,6 +17,7 @@ import 'wavelog_client.dart';
 import 'wavelog_preview.dart';
 import 'phone_position.dart';
 import 'settings_store.dart';
+import '../l10n/app_strings.dart';
 
 /// Glue between the Bluetooth link, the APRS protocol code and the UI.
 ///
@@ -159,7 +160,7 @@ class AppController extends ChangeNotifier {
   Future<WavelogResult> logToWavelog(String peer) async {
     final config = _settings.wavelogConfig;
     if (!config.isComplete) {
-      return const WavelogResult(false, 'Önce Ayarlar > Wavelog bölümünü doldurun.');
+      return WavelogResult(false, t('Önce Ayarlar > Wavelog bölümünü doldurun.'));
     }
     final WavelogQsoPreview? p;
     try {
@@ -168,7 +169,7 @@ class AppController extends ChangeNotifier {
       return WavelogResult(false, e.message);
     }
     if (p == null) {
-      return const WavelogResult(false, 'Bu istasyonla mesajlaşma yok ya da çağrı işareti ayarlı değil.');
+      return WavelogResult(false, t('Bu istasyonla mesajlaşma yok ya da çağrı işareti ayarlı değil.'));
     }
     return wavelog.logQso(config, p.adif);
   }
@@ -233,7 +234,7 @@ class AppController extends ChangeNotifier {
 
   Ax25Address _ownAddress() {
     if (!isUsableCallsign(_settings.callsign)) {
-      throw const FormatException('Önce Ayarlar\'dan kendi çağrı işaretinizi girin (örn. SP9AQG-9).');
+      throw FormatException(t('Önce Ayarlar\'dan kendi çağrı işaretinizi girin (örn. SP9AQG-9).'));
     }
     return Ax25Address.parse(_settings.callsign);
   }
@@ -246,10 +247,10 @@ class AppController extends ChangeNotifier {
         .map(Ax25Address.parse)
         .toList(growable: false);
     if (path.length > Ax25Frame.maxDigipeaters) {
-      throw const FormatException('Yol (path) en fazla ${Ax25Frame.maxDigipeaters} adım olabilir.');
+      throw FormatException(t('Yol (path) en fazla {v1} adım olabilir.', {'v1': Ax25Frame.maxDigipeaters}));
     }
     if (path.any((a) => a.repeated)) {
-      throw const FormatException('Yol (path) içinde * kullanılamaz.');
+      throw FormatException(t('Yol (path) içinde * kullanılamaz.'));
     }
     return path;
   }
@@ -293,7 +294,7 @@ class AppController extends ChangeNotifier {
           final lat = _settings.manualLat;
           final lon = _settings.manualLon;
           if (lat == null || lon == null) {
-            throw const FormatException('Ayarlar\'dan sabit konum girin ya da telefon GPS\'ini seçin.');
+            throw FormatException(t('Ayarlar\'dan sabit konum girin ya da telefon GPS\'ini seçin.'));
           }
           point = GeoPoint(lat, lon);
         case PositionSource.phone:
@@ -302,7 +303,7 @@ class AppController extends ChangeNotifier {
           } on StateError catch (e) {
             throw FormatException(e.message);
           } on Object catch (e) {
-            throw FormatException('Konum alınamadı: $e'); // timeouts, platform errors
+            throw FormatException(t('Konum alınamadı: {e}', {'e': e})); // timeouts, platform errors
           }
       }
     }
@@ -321,7 +322,7 @@ class AppController extends ChangeNotifier {
   /// Writes [packet] to the tracker, which puts it on the air. Throws
   /// [StateError] when not connected.
   Future<void> transmit(OutgoingPacket packet) async {
-    if (!_link.info.isConnected) throw StateError('Tracker bağlı değil.');
+    if (!_link.info.isConnected) throw StateError(t('Tracker bağlı değil.'));
     await _link.write(packet.kiss);
     final peer = packet.peer;
     if (peer != null) {
@@ -454,7 +455,7 @@ class AppController extends ChangeNotifier {
       final packet = _packet(buildAckInfo(to: to, id: id));
       await _link.write(packet.kiss);
     } on Object catch (e) {
-      _lastError = 'Ack gönderilemedi: $e';
+      _lastError = t('Ack gönderilemedi: {e}', {'e': e});
       notifyListeners();
     }
   }

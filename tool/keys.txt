@@ -1,0 +1,20 @@
+Bağlantı koptu, paket gönderilemedi.
+Bağlantı koptu.
+Cihazda KISS servisi bulunamadı (bu bir LoRa tracker değil mi, ya da KISS modu kapalı?).
+En uzun boşluk
+Tracker bağlı değil.
+a bağlanmak için aramayı başlatın
+a bağlanın.
+a bağlıyken telsizle duyduğu her şey burada görünür.
+a bağlıyken telsizle duyduğu konumlar burada görünür (yalnızca telsizle duyulanlar; internet beslemesi yok).
+a gönderiliyor...
+a kaydet" dediğinizde kullanılır.
+a yazıldı, yayınlanıyor.
+da konum kaynağı olarak "Telefon GPS"ini seçin.
+dan kendi çağrı işaretinizi girin (örn. SP9AQG-9).
+dan sabit konum girin ya da telefon GPS'ini seçin.
+i gerekir. Çalışırken kalıcı bir konum bildirimi gösterir ve ekran kapalıyken de sürer.
+lik kare (önerilen).
+u kapalı. Açın.
+ı başlat
+ınız üzerinden amatör telsiz frekanslarında yayın yapar. Yayın için geçerli bir amatör telsiz lisansına sahip olmanız ve kendi çağrı işaretinizi kullanmanız gerekir. Gönderdiğiniz her paketten siz sorumlusunuz; paketler internete düşerse herkese açık görünür.

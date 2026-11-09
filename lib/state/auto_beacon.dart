@@ -6,6 +6,7 @@ import '../core/smart_beacon.dart';
 import 'app_controller.dart';
 import 'models.dart';
 import 'phone_position.dart';
+import '../l10n/app_strings.dart';
 
 /// One GPS reading from the phone.
 class PhoneFix {
@@ -77,7 +78,7 @@ class AutoBeaconController extends ChangeNotifier {
   SmartBeaconEngine? _engine;
   PhoneFix? _fix;
   DateTime? _lastSent;
-  String _status = 'Kapalı';
+  String _status = t('Kapalı');
   final List<AutoBeaconLogEntry> _log = [];
   bool _busy = false;
   bool _disposed = false;
@@ -115,16 +116,16 @@ class AutoBeaconController extends ChangeNotifier {
     _config = config;
     _engine = config.mode == AutoBeaconMode.smart ? SmartBeaconEngine(config.params!) : null;
     _lastSent = null;
-    _status = 'Başlatılıyor...';
+    _status = t('Başlatılıyor...');
     notifyListeners();
     await _send('ilk beacon');
     return StartResult.started;
   }
 
-  void stop([String reason = 'Kapalı']) {
+  void stop([String? reason]) {
     _config = null;
     _engine = null;
-    _status = reason;
+    _status = reason ?? t('Kapalı');
     if (!_disposed) notifyListeners();
   }
 
@@ -136,7 +137,7 @@ class AutoBeaconController extends ChangeNotifier {
     final last = _lastSent;
     if (last != null && now.difference(last) < minGap) return;
     if (config.mode == AutoBeaconMode.interval) {
-      if (last == null || now.difference(last) >= config.interval!) await _send('aralık');
+      if (last == null || now.difference(last) >= config.interval!) await _send(t('aralık'));
       return;
     }
     final fix = _fix;
@@ -154,14 +155,14 @@ class AutoBeaconController extends ChangeNotifier {
       _setStatus('Hareket izleniyor');
       return;
     }
-    await _send(decision == BeaconDecision.turn ? 'dönüş' : 'hız');
+    await _send(decision == BeaconDecision.turn ? t('dönüş') : t('hız'));
   }
 
   // ---- internals ----
 
   String? _fixProblem(PhoneFix fix) {
-    if (_now().difference(fix.time) > maxFixAge) return 'GPS konumu eski, güncel konum bekleniyor';
-    if (fix.accuracyM > maxAccuracyM) return 'GPS yeterince hassas değil (${fix.accuracyM.round()} m)';
+    if (_now().difference(fix.time) > maxFixAge) return t('GPS konumu eski, güncel konum bekleniyor');
+    if (fix.accuracyM > maxAccuracyM) return t('GPS yeterince hassas değil ({v1} m)', {'v1': fix.accuracyM.round()});
     return null;
   }
 
@@ -181,7 +182,7 @@ class AutoBeaconController extends ChangeNotifier {
     if (_busy) return;
     final point = _resolvePosition();
     if (point == null) {
-      _setStatus(_usesPhone ? (_fix == null ? 'GPS konumu bekleniyor' : (_fixProblem(_fix!) ?? 'Konum yok')) : 'Konum ayarlı değil');
+      _setStatus(_usesPhone ? (_fix == null ? 'GPS konumu bekleniyor' : (_fixProblem(_fix!) ?? 'Konum yok')) : t('Konum ayarlı değil'));
       return;
     }
     _busy = true;
@@ -193,9 +194,9 @@ class AutoBeaconController extends ChangeNotifier {
       _engine?.markSent(SmartFix(speedKmh: _fix?.speedKmh ?? 0, headingDeg: _fix?.headingDeg, time: now));
       _log.insert(0, AutoBeaconLogEntry(time: now, text: packet.tnc2, reason: reason));
       if (_log.length > maxLog) _log.removeRange(maxLog, _log.length);
-      _setStatus('Son beacon gönderildi ($reason)');
+      _setStatus(t('Son beacon gönderildi ({reason})', {'reason': reason}));
     } on Object catch (e) {
-      _setStatus('Beacon gönderilemedi: $e');
+      _setStatus(t('Beacon gönderilemedi: {e}', {'e': e}));
     } finally {
       _busy = false;
     }
@@ -208,7 +209,7 @@ class AutoBeaconController extends ChangeNotifier {
   }
 
   void _onAppChanged() {
-    if (_config != null && !app.linkInfo.isConnected) stop('Tracker bağlantısı koptu, otomatik beacon durdu');
+    if (_config != null && !app.linkInfo.isConnected) stop(t('Tracker bağlantısı koptu, otomatik beacon durdu'));
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../l10n/app_strings.dart';
 
 /// What a Wavelog server needs from this app.
 class WavelogConfig {
@@ -34,12 +35,12 @@ class WavelogConfig {
   /// null when [url] is acceptable: https, or http only for hosts on the local network.
   static String? urlProblem(String url) {
     final text = url.trim();
-    if (text.isEmpty) return 'Wavelog adresi boş.';
+    if (text.isEmpty) return t('Wavelog adresi boş.');
     final uri = Uri.tryParse(text);
-    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return 'Adres geçersiz.';
+    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return t('Adres geçersiz.');
     if (uri.scheme == 'https') return null;
     if (uri.scheme == 'http' && _isLocalHost(uri.host)) return null;
-    return 'Adres https:// ile başlamalı (yalnızca yerel ağda http kabul edilir).';
+    return t('Adres https:// ile başlamalı (yalnızca yerel ağda http kabul edilir).');
   }
 
   static bool _isLocalHost(String host) {
@@ -110,7 +111,7 @@ class WavelogClient {
   String? _precheck(WavelogConfig c) {
     final problem = WavelogConfig.urlProblem(c.url);
     if (problem != null) return problem;
-    if (!c.isComplete) return 'Wavelog ayarları eksik (adres, API anahtarı, istasyon profil numarası, frekans).';
+    if (!c.isComplete) return t('Wavelog ayarları eksik (adres, API anahtarı, istasyon profil numarası, frekans).');
     return null;
   }
 
@@ -131,13 +132,13 @@ class WavelogClient {
   Future<WavelogResult> testConnection(WavelogConfig c) async {
     final problem = WavelogConfig.urlProblem(c.url);
     if (problem != null) return WavelogResult(false, problem);
-    if (c.apiKey.trim().isEmpty) return const WavelogResult(false, 'API anahtarı boş.');
+    if (c.apiKey.trim().isEmpty) return WavelogResult(false, t('API anahtarı boş.'));
     final reply = await _send(c, WavelogConfig.endpoint(c.url, 'api/version'), jsonEncode({'key': c.apiKey.trim()}));
     if (reply is WavelogResult) return reply;
     final r = reply as HttpReply;
     final json = _json(r.body);
     if (r.status >= 200 && r.status < 300 && json?['status'] == 'ok') {
-      return WavelogResult(true, 'Bağlantı tamam (Wavelog API ${json?['version'] ?? ''}).'.replaceAll(' )', ')'));
+      return WavelogResult(true, t('Bağlantı tamam (Wavelog API {v1}).', {'v1': json?['version'] ?? ''}).replaceAll(' )', ')'));
     }
     return WavelogResult(false, _failure(c, r));
   }
@@ -146,7 +147,7 @@ class WavelogClient {
     try {
       return await _post(uri, _headers, body);
     } on HttpFailure {
-      return WavelogResult(false, 'Wavelog sunucusuna ulaşılamadı (${c.host}). Adres ve internet bağlantısını kontrol edin.');
+      return WavelogResult(false, t('Wavelog sunucusuna ulaşılamadı ({v1}). Adres ve internet bağlantısını kontrol edin.', {'v1': c.host}));
     }
   }
 
@@ -157,7 +158,7 @@ class WavelogClient {
       return const WavelogResult(true, 'Wavelog\'a kaydedildi.');
     }
     if (r.status >= 200 && r.status < 300 && json == null) {
-      return const WavelogResult(false, 'Sunucu yanıtı anlaşılamadı; kayıt yapıldığı doğrulanamadı.');
+      return WavelogResult(false, t('Sunucu yanıtı anlaşılamadı; kayıt yapıldığı doğrulanamadı.'));
     }
     return WavelogResult(false, _failure(c, r));
   }

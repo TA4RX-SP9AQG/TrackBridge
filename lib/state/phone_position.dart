@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import '../l10n/app_strings.dart';
 
 /// A coordinate pair in decimal degrees.
 class GeoPoint {
@@ -15,14 +16,14 @@ typedef PositionProvider = Future<GeoPoint> Function();
 /// when location is off or denied.
 Future<GeoPoint> readPhonePosition() async {
   if (!await Geolocator.isLocationServiceEnabled()) {
-    throw StateError('Telefonun konum servisi kapalı.');
+    throw StateError(t('Telefonun konum servisi kapalı.'));
   }
   var permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
   }
   if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-    throw StateError('Konum izni verilmedi.');
+    throw StateError(t('Konum izni verilmedi.'));
   }
   final position = await Geolocator.getCurrentPosition(
     locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 20)),

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../core/tile_url.dart';
 import 'wavelog_client.dart';
+import '../l10n/app_strings.dart';
 
 enum PositionSource { manual, phone }
 
@@ -169,7 +170,7 @@ class ChatMessage {
     final text = json['t'];
     final ms = json['ms'];
     if (direction == null || state == null || peer is! String || text is! String || ms is! int) {
-      throw const FormatException('Kayıtlı mesaj okunamadı.');
+      throw FormatException(t('Kayıtlı mesaj okunamadı.'));
     }
     final id = json['id'];
     return ChatMessage(

@@ -6,6 +6,7 @@ import '../core/time_format.dart';
 import '../state/app_controller.dart';
 import 'app_theme.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 /// The pieces of background operation the UI needs.
 class BackgroundTools {
@@ -38,36 +39,36 @@ class BackgroundSection extends StatelessWidget {
         final frozen = hb.maxGapSeconds > frozenGapSeconds;
         final link = controller.linkInfo;
         final rows = <(String, String)>[
-          ('Kalp atışı', '${hb.count}'),
-          ('Son atış', hb.lastTick == null ? '-' : formatClockSeconds(hb.lastTick!)),
-          ('Çalışma süresi', formatDuration(tools.heartbeat.uptime)),
-          ('En uzun boşluk', '${hb.maxGapSeconds} sn'),
-          ('Tracker', link.isConnected ? 'Bağlı (${link.deviceName ?? 'tracker'})' : 'Bağlı değil'),
+          (t('Kalp atışı'), '${hb.count}'),
+          (t('Son atış'), hb.lastTick == null ? '-' : formatClockSeconds(hb.lastTick!)),
+          (t('Çalışma süresi'), formatDuration(tools.heartbeat.uptime)),
+          (t('En uzun boşluk'), '${hb.maxGapSeconds} sn'),
+          ('Tracker', link.isConnected ? t('Bağlı ({v1})', {'v1': link.deviceName ?? 'tracker'}) : t('Bağlı değil')),
           ('Duyulan paket', '${controller.heard.length}'),
           if (previous != null)
             (
-              'Önceki oturum',
-              '${previous.count} atış, son ${previous.lastTick == null ? '-' : formatClockSeconds(previous.lastTick!)}',
+              t('Önceki oturum'),
+              t('{v1} atış, son {v2}', {'v1': previous.count, 'v2': previous.lastTick == null ? '-' : formatClockSeconds(previous.lastTick!)}),
             ),
         ];
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const SectionHeader('Arka plan testi', subtitle: 'Geçici: arka planda çalışmayı doğrulamak için'),
+          SectionHeader(t('Arka plan testi'), subtitle: t('Geçici: arka planda çalışmayı doğrulamak için')),
           SurfaceCard(
             padding: const EdgeInsets.symmetric(horizontal: Gaps.l, vertical: Gaps.s),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Arka planda çalış'),
-                subtitle: const Text(
-                  'Kalıcı bir bildirim gösterir. Ekran kapalıyken ve başka uygulama öndeyken tracker bağlantısını açık tutar.',
+                title: Text(t('Arka planda çalış')),
+                subtitle: Text(
+                  t('Kalıcı bir bildirim gösterir. Ekran kapalıyken ve başka uygulama öndeyken tracker bağlantısını açık tutar.'),
                 ),
                 value: tools.service.enabled,
                 onChanged: tools.service.busy
                     ? null
                     : (v) => tools.service.setEnabled(
                           v,
-                          title: 'TrackBridge çalışıyor',
-                          body: link.isConnected ? 'Tracker bağlı: ${link.deviceName ?? ''}' : 'Tracker bağlı değil',
+                          title: t('TrackBridge çalışıyor'),
+                          body: link.isConnected ? t('Tracker bağlı: {v1}', {'v1': link.deviceName ?? ''}) : t('Tracker bağlı değil'),
                         ),
               ),
               if (tools.service.error != null)
@@ -92,7 +93,7 @@ class BackgroundSection extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: Gaps.s),
                   child: StatusPill(
-                    'Süreç ${hb.maxGapSeconds} sn dondu/kısıtlandı',
+                    t('Süreç {v1} sn dondu/kısıtlandı', {'v1': hb.maxGapSeconds}),
                     icon: Icons.warning_amber_rounded,
                     tone: PillTone.warning,
                   ),
@@ -101,8 +102,7 @@ class BackgroundSection extends StatelessWidget {
           ),
           const SizedBox(height: Gaps.m),
           Text(
-            'Test: anahtarı açın, Ana ekrana dönün, ekranı 10 dk kapatın, sonra uygulamayı son uygulamalardan silin ve '
-            'yeniden açın. Başarılıysa kalp atışı kesintisiz sürer, "En uzun boşluk" ~10 sn kalır ve paket sayısı artar.',
+            t('Test: anahtarı açın, Ana ekrana dönün, ekranı 10 dk kapatın, sonra uygulamayı son uygulamalardan silin ve yeniden açın. Başarılıysa kalp atışı kesintisiz sürer, \'En uzun boşluk\' ~10 sn kalır ve paket sayısı artar.'),
             style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ]);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_strings.dart';
 
 /// The TrackBridge logo with its name, picking the variant that is legible on
 /// the current theme (the "dark" file has light lettering for dark backgrounds).
@@ -15,7 +16,7 @@ class BrandLockup extends StatelessWidget {
       child: Image.asset(
         dark ? 'assets/branding/lockup-stacked-dark.png' : 'assets/branding/lockup-stacked-light.png',
         fit: BoxFit.contain,
-        semanticLabel: 'TrackBridge',
+        semanticLabel: t('TrackBridge'),
         filterQuality: FilterQuality.medium,
       ),
     );

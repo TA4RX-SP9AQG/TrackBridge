@@ -10,6 +10,7 @@ import '../state/station_table.dart';
 import 'messages_page.dart';
 import 'station_sheet.dart';
 import 'symbol_widget.dart';
+import '../l10n/app_strings.dart';
 
 /// Map of the stations, objects and items the tracker heard over the radio.
 class MapPage extends StatefulWidget {
@@ -71,8 +72,8 @@ class _MapPageState extends State<MapPage> {
   void _showAll(List<Station> stations) {
     final points = _points(stations);
     if (points.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Gösterilecek konum yok: henüz konumlu paket duyulmadı ve sabit konum ayarlanmadı.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(t('Gösterilecek konum yok: henüz konumlu paket duyulmadı ve sabit konum ayarlanmadı.')),
       ));
       return;
     }
@@ -177,10 +178,10 @@ class _MapPageState extends State<MapPage> {
         final first = stations.isEmpty ? null : stations.first.position;
         return Scaffold(
           appBar: AppBar(
-            title: Text('Harita (${stations.length} istasyon)'),
+            title: Text(t('Harita ({v1} istasyon)', {'v1': stations.length})),
             actions: [
               IconButton(
-                tooltip: 'Tümünü göster',
+                tooltip: t('Tümünü göster'),
                 icon: const Icon(Icons.zoom_out_map),
                 onPressed: () => _showAll(stations),
               ),
@@ -245,21 +246,21 @@ class _MapPageState extends State<MapPage> {
                 if (own != null)
                   FloatingActionButton.small(
                     heroTag: null,
-                    tooltip: 'Konumum',
+                    tooltip: t('Konumum'),
                     onPressed: _goToOwn,
                     child: const Icon(Icons.my_location),
                   ),
                 if (own != null) const SizedBox(height: 8),
                 FloatingActionButton.small(
                   heroTag: null,
-                  tooltip: 'Yakınlaştır',
+                  tooltip: t('Yakınlaştır'),
                   onPressed: () => _zoomBy(1),
                   child: const Icon(Icons.add),
                 ),
                 const SizedBox(height: 8),
                 FloatingActionButton.small(
                   heroTag: null,
-                  tooltip: 'Uzaklaştır',
+                  tooltip: t('Uzaklaştır'),
                   onPressed: () => _zoomBy(-1),
                   child: const Icon(Icons.remove),
                 ),
@@ -271,11 +272,10 @@ class _MapPageState extends State<MapPage> {
                 right: 12,
                 top: 12,
                 child: Card(
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(12),
                     child: Text(
-                      'Henüz konumlu paket duyulmadı. Tracker\'a bağlıyken telsizle duyduğu konumlar burada görünür '
-                      '(yalnızca telsizle duyulanlar; internet beslemesi yok).',
+                      t('Henüz konumlu paket duyulmadı. Tracker\'a bağlıyken telsizle duyduğu konumlar burada görünür (yalnızca telsizle duyulanlar; internet beslemesi yok).'),
                     ),
                   ),
                 ),
@@ -304,7 +304,7 @@ class _MapAttribution extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        isOpenStreetMap ? '© OpenStreetMap contributors' : 'harita: ${host ?? 'özel karo sunucusu'}',
+        isOpenStreetMap ? '© OpenStreetMap contributors' : 'harita: ${host ?? t('özel karo sunucusu')}',
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurface),

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '../l10n/app_strings.dart';
 
 final RegExp _addressPattern = RegExp(r'^([A-Za-z0-9]{1,6})(?:-(\d{1,2}))?$');
 
@@ -19,9 +20,9 @@ class Ax25Address {
       value = value.substring(0, value.length - 1);
     }
     final match = _addressPattern.firstMatch(value);
-    if (match == null) throw FormatException('Geçersiz adres: "$text"');
+    if (match == null) throw FormatException(t('Geçersiz adres: "{text}"', {'text': text}));
     final ssid = match.group(2) == null ? 0 : int.parse(match.group(2)!);
-    if (ssid > 15) throw FormatException('SSID 0-15 olmalı: "$text"');
+    if (ssid > 15) throw FormatException(t('SSID 0-15 olmalı: "{text}"', {'text': text}));
     return Ax25Address(callsign: match.group(1)!.toUpperCase(), ssid: ssid, repeated: repeated);
   }
 

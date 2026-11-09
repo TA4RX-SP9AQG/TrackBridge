@@ -8,6 +8,7 @@ import 'app_theme.dart';
 import 'confirm_transmit.dart';
 import 'wavelog_dialog.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 class MessagesPage extends StatelessWidget {
   const MessagesPage({super.key, required this.controller});
@@ -20,23 +21,23 @@ class MessagesPage extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.edit_outlined),
-        title: const Text('Yeni mesaj'),
+        title: Text(t('Yeni mesaj')),
         content: TextField(
           controller: field,
           autofocus: true,
           textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(labelText: 'Alıcı çağrı işareti', hintText: 'TA4RX-7'),
+          decoration: InputDecoration(labelText: t('Alıcı çağrı işareti'), hintText: t('TA4RX-7')),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Vazgeç')),
-          FilledButton(onPressed: () => Navigator.pop(context, field.text.trim()), child: const Text('Aç')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Vazgeç'))),
+          FilledButton(onPressed: () => Navigator.pop(context, field.text.trim()), child: Text(t('Aç'))),
         ],
       ),
     );
     field.dispose();
     if (peer == null || peer.isEmpty || !context.mounted) return;
     if (!isUsableCallsign(peer)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Geçersiz çağrı işareti.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('Geçersiz çağrı işareti.'))));
       return;
     }
     Navigator.of(context).push(MaterialPageRoute<void>(
@@ -53,18 +54,17 @@ class MessagesPage extends StatelessWidget {
         final entries = controller.conversations.entries.toList()
           ..sort((a, b) => b.value.last.time.compareTo(a.value.last.time));
         return Scaffold(
-          appBar: AppBar(title: const Text('Mesajlar')),
+          appBar: AppBar(title: Text(t('Mesajlar'))),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _newMessage(context),
             icon: const Icon(Icons.edit_outlined),
-            label: const Text('Yeni mesaj'),
+            label: Text(t('Yeni mesaj')),
           ),
           body: entries.isEmpty
-              ? const EmptyState(
+              ? EmptyState(
                   icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Henüz mesaj yok',
-                  message: 'Gelen ve gönderdiğiniz APRS mesajları burada görünür. '
-                      '"Yeni mesaj" ile bir çağrı işaretine yazabilirsiniz.',
+                  title: t('Henüz mesaj yok'),
+                  message: t('Gelen ve gönderdiğiniz APRS mesajları burada görünür. "Yeni mesaj" ile bir çağrı işaretine yazabilirsiniz.'),
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(Gaps.l, Gaps.s, Gaps.l, 96),
@@ -174,7 +174,7 @@ class _ChatPageState extends State<ChatPage> {
         actions: [
           if (widget.controller.settings.wavelogConfig.isComplete)
             IconButton(
-              tooltip: "Wavelog'a kaydet",
+              tooltip: t('Wavelog\'a kaydet'),
               icon: const Icon(Icons.menu_book_outlined),
               onPressed: () => logToWavelogWithConfirmation(context, widget.controller, widget.peer),
             ),
@@ -184,7 +184,7 @@ class _ChatPageState extends State<ChatPage> {
           const SizedBox(width: Gaps.m),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(widget.peer, style: theme.textTheme.titleMedium),
-            Text('APRS mesajı', style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+            Text(t('APRS mesajı'), style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
           ]),
         ]),
       ),
@@ -195,10 +195,10 @@ class _ChatPageState extends State<ChatPage> {
             builder: (context, _) {
               final messages = widget.controller.conversations[widget.peer] ?? const <ChatMessage>[];
               if (messages.isEmpty) {
-                return const EmptyState(
+                return EmptyState(
                   icon: Icons.forum_outlined,
-                  title: 'Henüz mesaj yok',
-                  message: 'İlk mesajı aşağıdan yazın. Göndermeden önce paketi görüp onaylarsınız.',
+                  title: t('Henüz mesaj yok'),
+                  message: t('İlk mesajı aşağıdan yazın. Göndermeden önce paketi görüp onaylarsınız.'),
                 );
               }
               return ListView.builder(
@@ -221,11 +221,11 @@ class _Bubble extends StatelessWidget {
   final ChatMessage message;
 
   (IconData, String)? _status() => switch (message.state) {
-        DeliveryState.sent => (Icons.check_rounded, 'gönderildi'),
-        DeliveryState.heardBack => (Icons.repeat_rounded, 'digipeater tekrarladı'),
-        DeliveryState.acked => (Icons.done_all_rounded, 'onaylandı'),
+        DeliveryState.sent => (Icons.check_rounded, t('gönderildi')),
+        DeliveryState.heardBack => (Icons.repeat_rounded, t('digipeater tekrarladı')),
+        DeliveryState.acked => (Icons.done_all_rounded, t('onaylandı')),
         DeliveryState.rejected => (Icons.block_rounded, 'reddedildi'),
-        DeliveryState.failed => (Icons.error_outline_rounded, 'başarısız'),
+        DeliveryState.failed => (Icons.error_outline_rounded, t('başarısız')),
         DeliveryState.none => null,
       };
 
@@ -299,7 +299,7 @@ class _Composer extends StatelessWidget {
                   maxLines: 4,
                   textInputAction: TextInputAction.newline,
                   decoration: InputDecoration(
-                    hintText: 'Mesaj yazın (yalnızca ASCII)',
+                    hintText: t('Mesaj yazın (yalnızca ASCII)'),
                     counterText: '',
                     suffixText: '${value.text.length}/$kMaxMessageLength',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.xl)),
@@ -319,7 +319,7 @@ class _Composer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: IconButton.filled(
-                tooltip: 'Gönder (telsizle yayınlanır)',
+                tooltip: t('Gönder (telsizle yayınlanır)'),
                 onPressed: onSend,
                 style: IconButton.styleFrom(
                   backgroundColor: scheme.tertiary,

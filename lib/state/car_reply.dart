@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 /// Why a spoken reply from the car was not sent.
 enum CarReplyRefusal { disabled, noCallsign, unknownPeer, notConnected, emptyText, tooSoon, tooMany, failed }
 
@@ -21,14 +22,14 @@ class CarReplyResult {
   final String? sentText;
 
   String get spoken => switch (refusal) {
-        null => 'Yanıt gönderildi.',
-        CarReplyRefusal.disabled => 'Arabadan sesli yanıt kapalı. Ayarlardan açabilirsiniz.',
-        CarReplyRefusal.noCallsign => 'Çağrı işareti ayarlı değil, yanıt gönderilemedi.',
-        CarReplyRefusal.unknownPeer => 'Bu istasyondan mesaj gelmediği için yanıt gönderilmedi.',
-        CarReplyRefusal.notConnected => 'Tracker bağlı değil, yanıt gönderilemedi.',
-        CarReplyRefusal.emptyText => 'Yanıt boş kaldığı için gönderilmedi.',
-        CarReplyRefusal.tooSoon => 'Çok hızlı. Yirmi saniye bekleyin.',
-        CarReplyRefusal.tooMany => 'Yanıt sınırına ulaşıldı. On dakika sonra tekrar deneyin.',
-        CarReplyRefusal.failed => 'Yanıt gönderilemedi.',
+        null => t('Yanıt gönderildi.'),
+        CarReplyRefusal.disabled => t('Arabadan sesli yanıt kapalı. Ayarlardan açabilirsiniz.'),
+        CarReplyRefusal.noCallsign => t('Çağrı işareti ayarlı değil, yanıt gönderilemedi.'),
+        CarReplyRefusal.unknownPeer => t('Bu istasyondan mesaj gelmediği için yanıt gönderilmedi.'),
+        CarReplyRefusal.notConnected => t('Tracker bağlı değil, yanıt gönderilemedi.'),
+        CarReplyRefusal.emptyText => t('Yanıt boş kaldığı için gönderilmedi.'),
+        CarReplyRefusal.tooSoon => t('Çok hızlı. Yirmi saniye bekleyin.'),
+        CarReplyRefusal.tooMany => t('Yanıt sınırına ulaşıldı. On dakika sonra tekrar deneyin.'),
+        CarReplyRefusal.failed => t('Yanıt gönderilemedi.'),
       };
 }

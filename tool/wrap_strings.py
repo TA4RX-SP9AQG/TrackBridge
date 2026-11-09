@@ -13,7 +13,7 @@ WRITE = "--write" in sys.argv
 
 # Files that need hand-made handling (const enums, map keys, mappings).
 SKIP_FILES = {"lib/core/symbols.dart", "lib/core/ascii_text.dart", "lib/core/smart_beacon.dart", "lib/l10n/english.dart", "lib/l10n/app_strings.dart"}
-UI_DIRS = ["lib/ui", "lib/state", "lib/core", "lib/background"]
+UI_DIRS = ["lib/ui", "lib/state", "lib/core", "lib/background", "lib/ble"]
 
 CONTEXT = re.compile(
     r"(?:\bconst\s+)?\b(?:Text|SectionHeader|StatusPill|HeroChip)\(\s*(?=['\"])"

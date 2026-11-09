@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'background_service.dart';
+import '../l10n/app_strings.dart';
 
 /// [BackgroundService] as an Android foreground service of type `connectedDevice`
 /// (a Bluetooth tracker), started through flutter_local_notifications.
@@ -24,10 +25,10 @@ class NotificationBackgroundService implements BackgroundService {
   @override
   bool get isRunning => _running;
 
-  static const AndroidNotificationDetails _details = AndroidNotificationDetails(
+  static AndroidNotificationDetails get _details => AndroidNotificationDetails(
     channelId,
-    'Arka plan bağlantısı',
-    channelDescription: 'Tracker bağlantısı arka planda açık tutulurken görünen kalıcı bildirim.',
+    t('Arka plan bağlantısı'),
+    channelDescription: t('Tracker bağlantısı arka planda açık tutulurken görünen kalıcı bildirim.'),
     importance: Importance.low,
     priority: Priority.low,
     ongoing: true,
@@ -42,10 +43,10 @@ class NotificationBackgroundService implements BackgroundService {
     await _plugin.initialize(
       settings: const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
     );
-    await _android?.createNotificationChannel(const AndroidNotificationChannel(
+    await _android?.createNotificationChannel(AndroidNotificationChannel(
       channelId,
-      'Arka plan bağlantısı',
-      description: 'Tracker bağlantısı arka planda açık tutulurken görünen kalıcı bildirim.',
+      t('Arka plan bağlantısı'),
+      description: t('Tracker bağlantısı arka planda açık tutulurken görünen kalıcı bildirim.'),
       importance: Importance.low,
       playSound: false,
       enableVibration: false,
@@ -83,7 +84,7 @@ class NotificationBackgroundService implements BackgroundService {
       id: notificationId,
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(android: _details),
+      notificationDetails: NotificationDetails(android: _details),
     );
   }
 

@@ -13,6 +13,7 @@ import 'permissions.dart';
 import 'symbol_picker.dart';
 import 'symbol_widget.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 /// Parses "52.2297, 21.0122" (as copied from a map app). Returns null if invalid.
 ({double lat, double lon})? parseLatLon(String text) {
@@ -111,7 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
       stationProfileId: _wlProfile.text,
       freqMhz: double.tryParse(_wlFreq.text.trim().replaceAll(',', '.')) ?? 0,
     );
-    _fail('Bağlantı deneniyor...');
+    _fail(t('Bağlantı deneniyor...'));
     final result = await widget.controller.wavelog.testConnection(config);
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -121,7 +122,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _checkNotifications() async {
     final granted = await (widget.requestNotificationPermission ?? ensureNotificationPermission)();
     if (!mounted) return;
-    _fail(granted ? 'Bildirim izni verildi.' : 'Bildirim izni verilmedi. Android ayarlarından TrackBridge için bildirimleri açın.');
+    _fail(granted ? 'Bildirim izni verildi.' : t('Bildirim izni verilmedi. Android ayarlarından TrackBridge için bildirimleri açın.'));
   }
 
   void _fail(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -129,7 +130,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _save() async {
     final callsign = _callsign.text.trim().toUpperCase();
     if (!isUsableCallsign(callsign)) {
-      _fail('Geçerli bir çağrı işareti girin (örn. SP9AQG-9). N0CALL kullanılamaz.');
+      _fail(t('Geçerli bir çağrı işareti girin (örn. SP9AQG-9). N0CALL kullanılamaz.'));
       return;
     }
     final hops = _path.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
@@ -138,31 +139,31 @@ class _SettingsPageState extends State<SettingsPage> {
         Ax25Address.parse(p);
       }
     } on FormatException catch (e) {
-      _fail('Yol (path) geçersiz: ${e.message}');
+      _fail(t('Yol (path) geçersiz: {v1}', {'v1': e.message}));
       return;
     }
     if (hops.any((h) => h.contains('*'))) {
-      _fail('Yol (path) içinde * kullanılamaz.');
+      _fail(t('Yol (path) içinde * kullanılamaz.'));
       return;
     }
     if (hops.length > Ax25Frame.maxDigipeaters) {
-      _fail('Yol (path) en fazla ${Ax25Frame.maxDigipeaters} adım olabilir (genelde 1-2 yeterli).');
+      _fail(t('Yol (path) en fazla {v1} adım olabilir (genelde 1-2 yeterli).', {'v1': Ax25Frame.maxDigipeaters}));
       return;
     }
     final point = _position.text.trim().isEmpty ? null : parseLatLon(_position.text);
     if (_position.text.trim().isNotEmpty && point == null) {
-      _fail('Konum "enlem, boylam" biçiminde olmalı (örn. 52.2297, 21.0122).');
+      _fail(t('Konum "enlem, boylam" biçiminde olmalı (örn. 52.2297, 21.0122).'));
       return;
     }
     final comment = _comment.text;
     final asciiOnly = comment.codeUnits.every((c) => c >= 0x20 && c <= 0x7E);
     if (comment.length > kMaxCommentLength || !asciiOnly || comment.contains('|') || comment.contains('~')) {
-      _fail('Yorum yalnızca ASCII olmalı (| ve ~ yok) ve en fazla $kMaxCommentLength karakter olabilir.');
+      _fail(t('Yorum yalnızca ASCII olmalı (| ve ~ yok) ve en fazla {kMaxCommentLength} karakter olabilir.', {'kMaxCommentLength': kMaxCommentLength}));
       return;
     }
     final tileUrl = _tileUrl.text.trim();
     if (!isValidTileUrl(tileUrl)) {
-      _fail('Harita karo adresi https:// ile başlamalı ve {z}, {x}, {y} içermeli.');
+      _fail(t('Harita karo adresi https:// ile başlamalı ve {z}, {x}, {y} içermeli.'));
       return;
     }
     final wlUrl = _wlUrl.text.trim();
@@ -176,12 +177,12 @@ class _SettingsPageState extends State<SettingsPage> {
         return;
       }
       if (int.tryParse(wlProfile) == null) {
-        _fail('Wavelog istasyon profil numarası bir sayı olmalı.');
+        _fail(t('Wavelog istasyon profil numarası bir sayı olmalı.'));
         return;
       }
     }
     if (wlFreq == null || wlFreq <= 0) {
-      _fail('Wavelog frekansı MHz olarak girilmeli (örn. 433.775).');
+      _fail(t('Wavelog frekansı MHz olarak girilmeli (örn. 433.775).'));
       return;
     }
     final current = widget.controller.settings;
@@ -214,38 +215,38 @@ class _SettingsPageState extends State<SettingsPage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Ayarlar')),
+      appBar: AppBar(title: Text(t('Ayarlar'))),
       body: ListView(padding: const EdgeInsets.fromLTRB(Gaps.l, 0, Gaps.l, Gaps.xl), children: [
-        const SectionHeader('İstasyon', subtitle: 'Paketlerde görünen kimliğiniz'),
+        SectionHeader(t('İstasyon'), subtitle: t('Paketlerde görünen kimliğiniz')),
         SurfaceCard(
           child: Column(children: [
             TextField(
               controller: _callsign,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Çağrı işareti-SSID', hintText: 'SP9AQG-9'),
+              decoration: InputDecoration(labelText: t('Çağrı işareti-SSID'), hintText: t('SP9AQG-9')),
             ),
             const SizedBox(height: Gaps.l),
             TextField(
               controller: _path,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Yol (path)', helperText: 'Virgülle ayırın; boş = digipeater yok'),
+              decoration: InputDecoration(labelText: t('Yol (path)'), helperText: t('Virgülle ayırın; boş = digipeater yok')),
             ),
           ]),
         ),
-        const SectionHeader('Beacon', subtitle: 'Konum paketinizin görünümü ve konumu'),
+        SectionHeader(t('Beacon'), subtitle: t('Konum paketinizin görünümü ve konumu')),
         _SymbolTile(table: _symbolTable, code: _symbolCode, onPick: _pickSymbol),
         const SizedBox(height: Gaps.m),
         SurfaceCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TextField(controller: _comment, decoration: const InputDecoration(labelText: 'Beacon yorumu')),
+            TextField(controller: _comment, decoration: InputDecoration(labelText: t('Beacon yorumu'))),
             const SizedBox(height: Gaps.xl),
-            Text('Beacon konumu', style: theme.textTheme.titleSmall),
+            Text(t('Beacon konumu'), style: theme.textTheme.titleSmall),
             const SizedBox(height: Gaps.s),
             SegmentedButton<PositionSource>(
               expandedInsets: EdgeInsets.zero,
-              segments: const [
-                ButtonSegment(value: PositionSource.manual, label: Text('Sabit konum'), icon: Icon(Icons.home_outlined)),
-                ButtonSegment(value: PositionSource.phone, label: Text('Telefon GPS'), icon: Icon(Icons.my_location_rounded)),
+              segments: [
+                ButtonSegment(value: PositionSource.manual, label: Text(t('Sabit konum')), icon: Icon(Icons.home_outlined)),
+                ButtonSegment(value: PositionSource.phone, label: Text(t('Telefon GPS')), icon: Icon(Icons.my_location_rounded)),
               ],
               selected: {_source},
               onSelectionChanged: (v) {
@@ -257,14 +258,14 @@ class _SettingsPageState extends State<SettingsPage> {
             TextField(
               controller: _position,
               keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-              decoration: const InputDecoration(
-                labelText: 'Sabit konum (enlem, boylam)',
-                helperText: 'Harita uygulamasından kopyalayıp yapıştırabilirsiniz',
+              decoration: InputDecoration(
+                labelText: t('Sabit konum (enlem, boylam)'),
+                helperText: t('Harita uygulamasından kopyalayıp yapıştırabilirsiniz'),
               ),
             ),
             const SizedBox(height: Gaps.xl),
             Row(children: [
-              Expanded(child: Text('Konum belirsizliği', style: theme.textTheme.titleSmall)),
+              Expanded(child: Text(t('Konum belirsizliği'), style: theme.textTheme.titleSmall)),
               StatusPill(
                 '$_ambiguity  (${ambiguityLabels[_ambiguity]})',
                 tone: _ambiguity == 0 ? PillTone.warning : PillTone.success,
@@ -280,18 +281,18 @@ class _SettingsPageState extends State<SettingsPage> {
               onChangeEnd: (v) => _applyNow((s) => s.copyWith(ambiguity: v.round())),
             ),
             Text(
-              "0 = tam konum yayınlanır. 2 = yaklaşık 2 km'lik kare (önerilen).",
+              t('0 = tam konum yayınlanır. 2 = yaklaşık 2 km\'lik kare (önerilen).'),
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ]),
         ),
-        const SectionHeader('Mesajlar'),
+        SectionHeader(t('Mesajlar')),
         SurfaceCard(
           padding: const EdgeInsets.symmetric(horizontal: Gaps.l, vertical: Gaps.xs),
           child: SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Gelen mesajlara otomatik ack gönder'),
-            subtitle: const Text('Yalnızca size adreslenen, numaralı mesajlara karşılık olarak yayın yapar.'),
+            title: Text(t('Gelen mesajlara otomatik ack gönder')),
+            subtitle: Text(t('Yalnızca size adreslenen, numaralı mesajlara karşılık olarak yayın yapar.')),
             value: _autoAck,
             onChanged: (v) {
               setState(() => _autoAck = v);
@@ -299,22 +300,19 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
         ),
-        const SectionHeader('Android Auto', subtitle: 'Arabada mesajlar sesli okunur'),
+        SectionHeader(t('Android Auto'), subtitle: t('Arabada mesajlar sesli okunur')),
         SurfaceCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
-              'Arabanın Android Auto ekranı size gelen APRS mesajlarını bildirim olarak gösterir ve sesli okur. '
-              'Yalnızca Android Auto açıkken gelen mesajlar görünür; geçmiş mesajlar yalnızca uygulamada kalır.',
+              t('Arabanın Android Auto ekranı size gelen APRS mesajlarını bildirim olarak gösterir ve sesli okur. Yalnızca Android Auto açıkken gelen mesajlar görünür; geçmiş mesajlar yalnızca uygulamada kalır.'),
               style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: Gaps.m),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Arabadan sesli yanıt'),
-              subtitle: const Text(
-                'Açıkken, arabada dikte ettiğiniz yanıt telsizle yayınlanır ve onay penceresi olmadan gider. '
-                'Yalnızca size mesaj atan istasyona, en fazla 67 karakter, Türkçe harfler sade ASCII harflere çevrilerek, '
-                '20 sn arayla gönderilir. Yayından siz sorumlusunuz.',
+              title: Text(t('Arabadan sesli yanıt')),
+              subtitle: Text(
+                t('Açıkken, arabada dikte ettiğiniz yanıt telsizle yayınlanır ve onay penceresi olmadan gider. Yalnızca size mesaj atan istasyona, en fazla 67 karakter, Türkçe harfler sade ASCII harflere çevrilerek, 20 sn arayla gönderilir. Yayından siz sorumlusunuz.'),
               ),
               value: _carVoiceReply,
               onChanged: (v) {
@@ -326,17 +324,17 @@ class _SettingsPageState extends State<SettingsPage> {
             OutlinedButton.icon(
               onPressed: _checkNotifications,
               icon: const Icon(Icons.notifications_active_outlined),
-              label: const Text('Bildirim iznini kontrol et'),
+              label: Text(t('Bildirim iznini kontrol et')),
             ),
           ]),
         ),
-        const SectionHeader('Wavelog', subtitle: 'Mesajlaşmaları günlüğünüze QSO olarak kaydedin (isteğe bağlı)'),
+        SectionHeader(t('Wavelog'), subtitle: t('Mesajlaşmaları günlüğünüze QSO olarak kaydedin (isteğe bağlı)')),
         SurfaceCard(
           child: Column(children: [
             TextField(
               controller: _wlUrl,
               keyboardType: TextInputType.url,
-              decoration: const InputDecoration(labelText: 'Wavelog adresi', hintText: 'https://log.ornek.com'),
+              decoration: InputDecoration(labelText: t('Wavelog adresi'), hintText: t('https://log.ornek.com')),
             ),
             const SizedBox(height: Gaps.l),
             TextField(
@@ -344,9 +342,9 @@ class _SettingsPageState extends State<SettingsPage> {
               obscureText: true,
               enableSuggestions: false,
               autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'API anahtarı (okuma+yazma)',
-                helperText: 'Yalnızca bu telefonda saklanır; yalnızca siz "Wavelog\'a kaydet" dediğinizde kullanılır.',
+              decoration: InputDecoration(
+                labelText: t('API anahtarı (okuma+yazma)'),
+                helperText: t('Yalnızca bu telefonda saklanır; yalnızca siz "Wavelog\'a kaydet" dediğinizde kullanılır.'),
                 helperMaxLines: 3,
               ),
             ),
@@ -356,7 +354,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: TextField(
                   controller: _wlProfile,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'İstasyon profil no'),
+                  decoration: InputDecoration(labelText: t('İstasyon profil no')),
                 ),
               ),
               const SizedBox(width: Gaps.m),
@@ -364,7 +362,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: TextField(
                   controller: _wlFreq,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Frekans (MHz)'),
+                  decoration: InputDecoration(labelText: t('Frekans (MHz)')),
                 ),
               ),
             ]),
@@ -372,35 +370,34 @@ class _SettingsPageState extends State<SettingsPage> {
             OutlinedButton.icon(
               onPressed: _testWavelog,
               icon: const Icon(Icons.wifi_tethering_rounded),
-              label: const Text('Bağlantıyı dene'),
+              label: Text(t('Bağlantıyı dene')),
             ),
           ]),
         ),
-        const SectionHeader('Harita'),
+        SectionHeader(t('Harita')),
         SurfaceCard(
           child: TextField(
             controller: _tileUrl,
             keyboardType: TextInputType.url,
             decoration: InputDecoration(
-              labelText: 'Harita karo adresi',
-              helperText: 'Varsayılan OpenStreetMap yalnızca geliştirme/test içindir. {z}/{x}/{y} gerekir.',
+              labelText: t('Harita karo adresi'),
+              helperText: t('Varsayılan OpenStreetMap yalnızca geliştirme/test içindir. {z}/{x}/{y} gerekir.'),
               helperMaxLines: 3,
               suffixIcon: IconButton(
-                tooltip: 'Varsayılana dön',
+                tooltip: t('Varsayılana dön'),
                 icon: const Icon(Icons.restore_rounded),
                 onPressed: () => setState(() => _tileUrl.text = kDefaultTileUrl),
               ),
             ),
           ),
         ),
-        const SectionHeader('Hakkında'),
+        SectionHeader(t('Hakkında')),
         SurfaceCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('TrackBridge', style: theme.textTheme.titleSmall),
+            Text(t('TrackBridge'), style: theme.textTheme.titleSmall),
             const SizedBox(height: Gaps.xs),
             Text(
-              'Açık kaynak (GPL-3.0). APRS simgeleri: hessu/aprs-symbols (OH7LZB). '
-              'Harita verisi © OpenStreetMap katkıda bulunanlar.',
+              t('Açık kaynak (GPL-3.0). APRS simgeleri: hessu/aprs-symbols (OH7LZB). Harita verisi © OpenStreetMap katkıda bulunanlar.'),
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ]),
@@ -415,7 +412,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: FilledButton.icon(
               onPressed: _save,
               icon: const Icon(Icons.check_rounded),
-              label: const Text('Kaydet'),
+              label: Text(t('Kaydet')),
             ),
           ),
         ),
@@ -453,7 +450,7 @@ class _SymbolTile extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(resolved?.info.name ?? 'Bilinmeyen sembol', style: theme.textTheme.titleMedium),
             Text(
-              'Beacon simgesi  ($table$code${overlay == null ? '' : ', katman $overlay'})',
+              t('Beacon simgesi  ({table}{code}{v1})', {'table': table, 'code': code, 'v1': overlay == null ? '' : ', katman $overlay'}),
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ]),

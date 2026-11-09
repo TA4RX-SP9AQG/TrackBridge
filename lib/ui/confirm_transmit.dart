@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../state/app_controller.dart';
 import '../state/models.dart';
 import 'app_theme.dart';
+import '../l10n/app_strings.dart';
 
 /// Shows the exact packet and asks the user to confirm before it goes on the air.
 Future<bool> confirmTransmit(BuildContext context, OutgoingPacket packet) async {
@@ -13,14 +14,13 @@ Future<bool> confirmTransmit(BuildContext context, OutgoingPacket packet) async 
       final scheme = theme.colorScheme;
       return AlertDialog(
         icon: Icon(Icons.cell_tower_rounded, color: scheme.tertiary, size: 32),
-        title: const Text('Yayınlansın mı?'),
+        title: Text(t('Yayınlansın mı?')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bu paket tracker tarafından telsizle (LoRa) yayınlanacak. '
-              'İnternete düşerse herkese açık görünür ve geri alınamaz.',
+              t('Bu paket tracker tarafından telsizle (LoRa) yayınlanacak. İnternete düşerse herkese açık görünür ve geri alınamaz.'),
               style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: Gaps.l),
@@ -40,12 +40,12 @@ Future<bool> confirmTransmit(BuildContext context, OutgoingPacket packet) async 
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t('Vazgeç'))),
           FilledButton.icon(
             style: transmitButtonStyle(context),
             onPressed: () => Navigator.pop(context, true),
             icon: const Icon(Icons.cell_tower_rounded),
-            label: const Text('Yayınla'),
+            label: Text(t('Yayınla')),
           ),
         ],
       );
@@ -61,10 +61,10 @@ Future<bool> confirmAndTransmit(BuildContext context, AppController controller, 
   if (!await confirmTransmit(context, packet)) return false;
   try {
     await controller.transmit(packet);
-    messenger.showSnackBar(const SnackBar(content: Text('Tracker\'a yazıldı, yayınlanıyor.')));
+    messenger.showSnackBar(SnackBar(content: Text(t('Tracker\'a yazıldı, yayınlanıyor.'))));
     return true;
   } on Object catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text('Gönderilemedi: $e')));
+    messenger.showSnackBar(SnackBar(content: Text(t('Gönderilemedi: {e}', {'e': e}))));
     return false;
   }
 }

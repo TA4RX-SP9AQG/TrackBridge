@@ -9,6 +9,7 @@ import '../state/station_table.dart';
 import 'app_theme.dart';
 import 'symbol_widget.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 /// Our own position (from settings) for distance and bearing, or null.
 class OwnPoint {
@@ -57,7 +58,7 @@ class StationSheet extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     final result = await openNavigation(p.lat, p.lon, station.displayName, launcher: launcher);
     if (result == NavigationResult.failed) {
-      messenger.showSnackBar(const SnackBar(content: Text('Harita/navigasyon uygulaması açılamadı.')));
+      messenger.showSnackBar(SnackBar(content: Text(t('Harita/navigasyon uygulaması açılamadı.'))));
     }
   }
 
@@ -65,7 +66,7 @@ class StationSheet extends StatelessWidget {
     final p = station.position;
     final messenger = ScaffoldMessenger.of(context);
     if (!await openInMapApp(p.lat, p.lon, station.displayName, launcher: launcher)) {
-      messenger.showSnackBar(const SnackBar(content: Text('Harita uygulaması açılamadı.')));
+      messenger.showSnackBar(SnackBar(content: Text(t('Harita uygulaması açılamadı.'))));
     }
   }
 
@@ -81,13 +82,12 @@ class StationSheet extends StatelessWidget {
       if (ownPoint != null)
         (
           'Mesafe',
-          '${formatDistance(distanceKm(ownPoint.lat, ownPoint.lon, p.lat, p.lon))} · '
-              '${compassPoint(bearingDegrees(ownPoint.lat, ownPoint.lon, p.lat, p.lon))} yönünde',
+          t('{v1} · {v2} yönünde', {'v1': formatDistance(distanceKm(ownPoint.lat, ownPoint.lon, p.lat, p.lon)), 'v2': compassPoint(bearingDegrees(ownPoint.lat, ownPoint.lon, p.lat, p.lon))}),
         ),
-      if (p.speedKmh != null || p.courseDeg != null) ('Hız / yön', _motionText(p)),
-      if (p.altitudeM != null) ('Yükseklik', '${p.altitudeM!.round()} m'),
+      if (p.speedKmh != null || p.courseDeg != null) (t('Hız / yön'), _motionText(p)),
+      if (p.altitudeM != null) (t('Yükseklik'), '${p.altitudeM!.round()} m'),
       ('Son duyulma', '${formatAge(now.difference(station.lastHeard))} · ${formatClock(station.lastHeard)} · ${station.packetCount} paket'),
-      ('Nasıl duyuldu', station.viaDigipeater ? 'Digipeater üzerinden: ${station.path}' : 'Doğrudan duyuldu'),
+      (t('Nasıl duyuldu'), station.viaDigipeater ? t('Digipeater üzerinden: {v1}', {'v1': station.path}) : t('Doğrudan duyuldu')),
     ];
     return SafeArea(
       child: SingleChildScrollView(
@@ -125,7 +125,7 @@ class StationSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(Radii.l),
             ),
             child: p.comment.isEmpty
-                ? Text('Yorum yok', style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: scheme.onSurfaceVariant))
+                ? Text(t('Yorum yok'), style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: scheme.onSurfaceVariant))
                 : SelectableText(p.comment, style: theme.textTheme.bodyLarge),
           ),
           const SizedBox(height: Gaps.m),
@@ -142,7 +142,7 @@ class StationSheet extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => _directions(context),
             icon: const Icon(Icons.navigation_rounded),
-            label: const Text('Yol tarifi'),
+            label: Text(t('Yol tarifi')),
           ),
           if (onMessage != null) ...[
             const SizedBox(height: Gaps.s),
@@ -152,14 +152,14 @@ class StationSheet extends StatelessWidget {
                 onMessage!();
               },
               icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: const Text('Mesaj gönder'),
+              label: Text(t('Mesaj gönder')),
             ),
           ],
           const SizedBox(height: Gaps.xs),
           TextButton.icon(
             onPressed: () => _openElsewhere(context),
             icon: const Icon(Icons.map_outlined),
-            label: const Text('Başka uygulamada aç'),
+            label: Text(t('Başka uygulamada aç')),
           ),
         ]),
       ),

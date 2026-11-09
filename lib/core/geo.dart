@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../l10n/app_strings.dart';
 
 const double _earthRadiusKm = 6371.0088;
 
@@ -38,8 +39,8 @@ String compassPoint(double degrees) {
 
 /// "az önce", "5 dk önce", "2 sa önce", "1 gün önce".
 String formatAge(Duration age) {
-  if (age.inMinutes < 1) return 'az önce';
-  if (age.inHours < 1) return '${age.inMinutes} dk önce';
-  if (age.inDays < 1) return '${age.inHours} sa önce';
-  return '${age.inDays} gün önce';
+  if (age.inMinutes < 1) return t('az önce');
+  if (age.inHours < 1) return t('{v1} dk önce', {'v1': age.inMinutes});
+  if (age.inDays < 1) return t('{v1} sa önce', {'v1': age.inHours});
+  return t('{v1} gün önce', {'v1': age.inDays});
 }

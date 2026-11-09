@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../state/app_controller.dart';
 import '../state/message_notifier.dart';
+import '../l10n/app_strings.dart';
 
 /// Connects Dart to the Kotlin code that owns the message notifications shown by
 /// Android and by Android Auto.
@@ -32,7 +33,7 @@ class NativeMessageBridge implements MessageNotifier {
         final peer = args['peer'];
         final text = args['text'];
         if (peer is! String || text is! String) {
-          return <String, Object?>{'sent': false, 'spoken': 'Yanıt anlaşılamadı.'};
+          return <String, Object?>{'sent': false, 'spoken': t('Yanıt anlaşılamadı.')};
         }
         final result = await controller.replyFromCar(peer, text);
         return <String, Object?>{'sent': result.sent, 'spoken': result.spoken, 'text': result.sentText};

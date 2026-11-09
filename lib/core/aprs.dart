@@ -1,4 +1,5 @@
 import 'ax25.dart';
+import '../l10n/app_strings.dart';
 
 /// Destination ("tocall") used for packets we build. The tracker firmware uses
 /// the same value. TODO(release): request an own tocall before a store release.
@@ -44,29 +45,29 @@ bool _isPrintableAscii(String s) => s.codeUnits.every((c) => c >= 0x20 && c <= 0
 String _paddedAddressee(String to) {
   final value = to.trim().toUpperCase();
   if (value.isEmpty || value.length > 9 || value.contains(':')) {
-    throw FormatException('Geçersiz alıcı: "$to"');
+    throw FormatException(t('Geçersiz alıcı: "{to}"', {'to': to}));
   }
   return value.padRight(9);
 }
 
 /// Builds the information field of an APRS message: `:ADDRESSEE:text{id`.
 String buildMessageInfo({required String to, required String text, String? id}) {
-  if (text.isEmpty) throw const FormatException('Mesaj boş olamaz.');
+  if (text.isEmpty) throw FormatException(t('Mesaj boş olamaz.'));
   if (text.length > kMaxMessageLength) {
     throw const FormatException('Mesaj en fazla $kMaxMessageLength karakter olabilir.');
   }
   if (!_isPrintableAscii(text) || text.contains('{') || text.contains('|') || text.contains('~')) {
-    throw const FormatException('Mesaj yalnızca ASCII olmalı ({, | ve ~ kullanılamaz).');
+    throw FormatException(t('Mesaj yalnızca ASCII olmalı ({, | ve ~ kullanılamaz).'));
   }
   if (id != null && !_idPattern.hasMatch(id)) {
-    throw const FormatException('Mesaj numarası 1-5 harf/rakam olmalı.');
+    throw FormatException(t('Mesaj numarası 1-5 harf/rakam olmalı.'));
   }
   return ':${_paddedAddressee(to)}:$text${id == null ? '' : '{$id'}';
 }
 
 /// Builds an acknowledgement for message [id] sent by [to].
 String buildAckInfo({required String to, required String id}) {
-  if (!_idPattern.hasMatch(id)) throw const FormatException('Geçersiz mesaj numarası.');
+  if (!_idPattern.hasMatch(id)) throw FormatException(t('Geçersiz mesaj numarası.'));
   return ':${_paddedAddressee(to)}:ack$id';
 }
 
@@ -115,12 +116,12 @@ String buildPositionInfo({
   String comment = '',
   int ambiguity = 0,
 }) {
-  if (lat.isNaN || lat < -90 || lat > 90) throw const FormatException('Enlem -90..90 olmalı.');
-  if (lon.isNaN || lon < -180 || lon > 180) throw const FormatException('Boylam -180..180 olmalı.');
-  if (ambiguity < 0 || ambiguity > 4) throw const FormatException('Belirsizlik 0-4 olmalı.');
-  if (symbolTable.length != 1 || symbol.length != 1) throw const FormatException('Sembol tek karakter olmalı.');
+  if (lat.isNaN || lat < -90 || lat > 90) throw FormatException(t('Enlem -90..90 olmalı.'));
+  if (lon.isNaN || lon < -180 || lon > 180) throw FormatException(t('Boylam -180..180 olmalı.'));
+  if (ambiguity < 0 || ambiguity > 4) throw FormatException(t('Belirsizlik 0-4 olmalı.'));
+  if (symbolTable.length != 1 || symbol.length != 1) throw FormatException(t('Sembol tek karakter olmalı.'));
   if (comment.length > kMaxCommentLength || !_isPrintableAscii(comment) || comment.contains('|') || comment.contains('~')) {
-    throw const FormatException('Yorum ASCII ve en fazla $kMaxCommentLength karakter olmalı.');
+    throw FormatException(t('Yorum ASCII ve en fazla {kMaxCommentLength} karakter olmalı.', {'kMaxCommentLength': kMaxCommentLength}));
   }
   final latText = _blank(_degMin(lat.abs(), 2), 2, ambiguity);
   final lonText = _blank(_degMin(lon.abs(), 3), 3, ambiguity);

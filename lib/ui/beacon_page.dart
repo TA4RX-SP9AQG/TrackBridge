@@ -10,6 +10,7 @@ import 'auto_beacon_card.dart';
 import 'confirm_transmit.dart';
 import 'symbol_widget.dart';
 import 'widgets/ui_kit.dart';
+import '../l10n/app_strings.dart';
 
 /// Approximate size of the blanked square for each ambiguity level.
 const List<String> ambiguityLabels = <String>['~20 m', '~200 m', '~2 km', '~20 km', '~200 km'];
@@ -55,7 +56,7 @@ class _BeaconPageState extends State<BeaconPage> {
         final scheme = theme.colorScheme;
         final symbol = resolveSymbol(s.symbolTable, s.symbol);
         return Scaffold(
-          appBar: AppBar(title: const Text('Beacon')),
+          appBar: AppBar(title: Text(t('Beacon'))),
           body: ListView(padding: const EdgeInsets.fromLTRB(Gaps.l, Gaps.s, Gaps.l, Gaps.xl), children: [
             SurfaceCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -70,7 +71,7 @@ class _BeaconPageState extends State<BeaconPage> {
                   const SizedBox(width: Gaps.l),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(s.callsign.isEmpty ? '(çağrı işareti yok)' : s.callsign, style: theme.textTheme.titleLarge),
+                      Text(s.callsign.isEmpty ? t('(çağrı işareti yok)') : s.callsign, style: theme.textTheme.titleLarge),
                       Text(
                         symbol?.info.name ?? '${s.symbolTable}${s.symbol}',
                         style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
@@ -92,19 +93,19 @@ class _BeaconPageState extends State<BeaconPage> {
                 ]),
               ]),
             ),
-            const SectionHeader('Paket ayrıntıları'),
+            SectionHeader(t('Paket ayrıntıları')),
             SurfaceCard(
               padding: const EdgeInsets.symmetric(horizontal: Gaps.l, vertical: Gaps.s),
               child: Column(children: [
-                _row(context, 'Çağrı işareti', s.callsign.isEmpty ? '(ayarlanmadı)' : s.callsign),
+                _row(context, t('Çağrı işareti'), s.callsign.isEmpty ? t('(ayarlanmadı)') : s.callsign),
                 const Divider(),
-                _row(context, 'Konum kaynağı', s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i'),
+                _row(context, t('Konum kaynağı'), s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i'),
                 const Divider(),
-                _row(context, 'Konum belirsizliği', '${s.ambiguity}  (${ambiguityLabels[s.ambiguity]})'),
+                _row(context, t('Konum belirsizliği'), '${s.ambiguity}  (${ambiguityLabels[s.ambiguity]})'),
                 const Divider(),
-                _row(context, 'Yol (path)', s.path.isEmpty ? '(boş)' : s.path),
+                _row(context, 'Yol (path)', s.path.isEmpty ? t('(boş)') : s.path),
                 const Divider(),
-                _row(context, 'Yorum', s.comment.isEmpty ? '(boş)' : s.comment),
+                _row(context, 'Yorum', s.comment.isEmpty ? t('(boş)') : s.comment),
               ]),
             ),
             const SizedBox(height: Gaps.m),
@@ -116,7 +117,7 @@ class _BeaconPageState extends State<BeaconPage> {
                 const SizedBox(width: Gaps.m),
                 Expanded(
                   child: Text(
-                    'Belirsizlik > 0 iken gizlenen basamaklar pakete hiç girmez; tam konumunuz yayınlanmaz.',
+                    t('Belirsizlik > 0 iken gizlenen basamaklar pakete hiç girmez; tam konumunuz yayınlanmaz.'),
                     style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer),
                   ),
                 ),
@@ -131,15 +132,15 @@ class _BeaconPageState extends State<BeaconPage> {
               icon: _busy
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.cell_tower_rounded),
-              label: const Text('Beacon hazırla ve gönder'),
+              label: Text(t('Beacon hazırla ve gönder')),
             ),
             if (!connected)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: Gaps.m),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: StatusPill(
-                    'Önce Bağlantı sekmesinden tracker\'a bağlanın.',
+                    t('Önce Bağlantı sekmesinden tracker\'a bağlanın.'),
                     icon: Icons.bluetooth_disabled_rounded,
                     tone: PillTone.warning,
                   ),

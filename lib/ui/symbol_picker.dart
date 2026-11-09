@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/symbols.dart';
 import 'symbol_widget.dart';
+import '../l10n/app_strings.dart';
 
 /// The value stored in settings and sent in position packets: the table
 /// character (`/`, `\` or an overlay character) and the symbol code.
@@ -58,14 +59,14 @@ class _SymbolPickerPageState extends State<SymbolPickerPage> {
   Widget build(BuildContext context) {
     final symbols = _visible;
     return Scaffold(
-      appBar: AppBar(title: const Text('Sembol seç')),
+      appBar: AppBar(title: Text(t('Sembol seç'))),
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
           child: SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, label: Text('Birincil')),
-              ButtonSegment(value: true, label: Text('Alternatif')),
+            segments: [
+              ButtonSegment(value: false, label: Text(t('Birincil'))),
+              ButtonSegment(value: true, label: Text(t('Alternatif'))),
             ],
             selected: {_alternate},
             onSelectionChanged: (v) => setState(() => _alternate = v.first),
@@ -74,9 +75,9 @@ class _SymbolPickerPageState extends State<SymbolPickerPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
           child: TextField(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               prefixIcon: Icon(Icons.search),
-              hintText: 'Ara (İngilizce ad ya da karakter)',
+              hintText: t('Ara (İngilizce ad ya da karakter)'),
               isDense: true,
             ),
             onChanged: (v) => setState(() => _query = v),
@@ -91,7 +92,7 @@ class _SymbolPickerPageState extends State<SymbolPickerPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                 child: ChoiceChip(
-                  label: const Text('Tümü'),
+                  label: Text(t('Tümü')),
                   selected: _category == null,
                   onSelected: (_) => setState(() => _category = null),
                 ),
@@ -110,7 +111,7 @@ class _SymbolPickerPageState extends State<SymbolPickerPage> {
         ),
         Expanded(
           child: symbols.isEmpty
-              ? const Center(child: Text('Eşleşen sembol yok'))
+              ? Center(child: Text(t('Eşleşen sembol yok')))
               : GridView.builder(
                   padding: const EdgeInsets.all(8),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -198,13 +199,13 @@ class _OverlaySheet extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(symbol.name, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          const Text('Üzerine yazılacak harf/rakam (isteğe bağlı)'),
+          Text(t('Üzerine yazılacak harf/rakam (isteğe bağlı)')),
           const SizedBox(height: 8),
           Wrap(spacing: 6, runSpacing: 6, children: [
             ActionChip(
               key: const ValueKey('overlay_none'),
               avatar: AprsSymbolIcon(table: symbol.table, code: symbol.code, size: 24),
-              label: const Text('Yok'),
+              label: Text(t('Yok')),
               onPressed: () => Navigator.of(context).pop(symbol.table),
             ),
             for (final c in _chars)
