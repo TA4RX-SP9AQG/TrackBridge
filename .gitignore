@@ -56,3 +56,7 @@ app.*.map.json
 *.keystore
 key.properties
 .env
+
+# graphify output (local, rebuilt by the post-commit hook)
+graphify-out/
+.claude/
