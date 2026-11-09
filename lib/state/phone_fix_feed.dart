@@ -41,7 +41,7 @@ class GeolocatorFeed implements PhoneFixFeed {
       foregroundNotificationConfig: ForegroundNotificationConfig(
         notificationTitle: title,
         notificationText: text,
-        notificationChannelName: 'Konum (otomatik beacon)',
+        notificationChannelName: t('Konum (otomatik beacon)'),
         setOngoing: true,
       ),
     );

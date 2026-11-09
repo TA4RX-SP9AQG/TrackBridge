@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 
@@ -17,6 +18,8 @@ import 'ui/app_theme.dart';
 import 'ui/background_section.dart';
 import 'ui/home_page.dart';
 import 'ui/permissions.dart';
+import 'ui/rebuild.dart';
+import 'l10n/app_strings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +28,7 @@ Future<void> main() async {
   // Message notifications (phone and Android Auto) are built by native code; the bridge connects them.
   final bridge = NativeMessageBridge();
   final controller = AppController(
+    systemLanguage: PlatformDispatcher.instance.locale.languageCode,
     link: ReactiveTrackerLink(requireLocationServices: needsLocation),
     store: PrefsSettingsStore(),
     notifier: bridge,
@@ -53,7 +57,7 @@ Future<void> main() async {
   ));
 }
 
-class TrackBridgeApp extends StatelessWidget {
+class TrackBridgeApp extends StatefulWidget {
   const TrackBridgeApp({super.key, required this.controller, this.background, this.auto, this.feed});
 
   final AppController controller;
@@ -62,13 +66,40 @@ class TrackBridgeApp extends StatelessWidget {
   final PhoneFixFeed? feed;
 
   @override
+  State<TrackBridgeApp> createState() => _TrackBridgeAppState();
+}
+
+class _TrackBridgeAppState extends State<TrackBridgeApp> {
+  late AppLanguage _shown = L10n.language;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onController);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onController);
+    super.dispose();
+  }
+
+  /// Texts are looked up while building, so a language change rebuilds every mounted widget
+  /// (screens already on the navigator stack included) without resetting any state.
+  void _onController() {
+    if (_shown == L10n.language) return;
+    _shown = L10n.language;
+    rebuildEverything();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TrackBridge',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: HomePage(controller: controller, background: background, auto: auto, feed: feed),
+      home: HomePage(controller: widget.controller, background: widget.background, auto: widget.auto, feed: widget.feed),
     );
   }
 }

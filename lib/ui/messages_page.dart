@@ -112,7 +112,7 @@ class _ConversationTile extends StatelessWidget {
             ]),
             const SizedBox(height: 2),
             Text(
-              '${mine ? 'Siz: ' : ''}${last.text}',
+              '${mine ? t('Siz: ') : ''}${last.text}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),

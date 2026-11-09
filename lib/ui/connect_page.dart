@@ -77,7 +77,7 @@ class _ConnectPageState extends State<ConnectPage> {
     if (!await ensureBlePermissions() || !mounted) return;
     await _c.connectTo(FoundTracker(
       id: _c.settings.lastDeviceId!,
-      name: _c.settings.lastDeviceName ?? 'Son cihaz',
+      name: _c.settings.lastDeviceName ?? t('Son cihaz'),
       rssi: 0,
     ));
   }
@@ -112,7 +112,7 @@ class _ConnectPageState extends State<ConnectPage> {
             FilledButton.icon(
               onPressed: _scanning ? _stopScan : _startScan,
               icon: Icon(_scanning ? Icons.stop_rounded : Icons.search_rounded),
-              label: Text(_scanning ? t('Taramayı durdur') : 'Tracker ara'),
+              label: Text(_scanning ? t('Taramayı durdur') : t('Tracker ara')),
             ),
             if (info.status != LinkStatus.disconnected) ...[
               const SizedBox(height: Gaps.s),
@@ -152,7 +152,7 @@ class _ConnectPageState extends State<ConnectPage> {
             ],
             SectionHeader(
               t('Duyulan paketler'),
-              subtitle: heard.isEmpty ? null : '${heard.length} paket · telsizle duyulanlar',
+              subtitle: heard.isEmpty ? null : t('{n} paket · telsizle duyulanlar', {'n': heard.length}),
             ),
             if (heard.isEmpty)
               SurfaceCard(
@@ -193,7 +193,7 @@ class _AdapterBanner extends StatelessWidget {
         final text = switch (snapshot.data) {
           AdapterState.off => t('Telefonun Bluetooth\'u kapalı. Açın.'),
           AdapterState.unauthorized => t('Bluetooth izni yok. Uygulama ayarlarından izin verin.'),
-          AdapterState.unavailable => 'Bu telefon Bluetooth LE desteklemiyor.',
+          AdapterState.unavailable => t('Bu telefon Bluetooth LE desteklemiyor.'),
           _ => null,
         };
         if (text == null) return const SizedBox.shrink();

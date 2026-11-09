@@ -82,11 +82,11 @@ class _BeaconPageState extends State<BeaconPage> {
                 const SizedBox(height: Gaps.l),
                 Wrap(spacing: Gaps.s, runSpacing: Gaps.s, children: [
                   StatusPill(
-                    s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i',
+                    s.positionSource == PositionSource.manual ? t('Sabit konum') : t('Telefon GPS\'i'),
                     icon: s.positionSource == PositionSource.manual ? Icons.home_outlined : Icons.my_location_rounded,
                   ),
                   StatusPill(
-                    s.ambiguity == 0 ? 'Tam konum' : 'Belirsizlik ${s.ambiguity} · ${ambiguityLabels[s.ambiguity]}',
+                    s.ambiguity == 0 ? t('Tam konum') : t('Belirsizlik {n} · {range}', {'n': s.ambiguity, 'range': ambiguityLabels[s.ambiguity]}),
                     icon: s.ambiguity == 0 ? Icons.location_on_outlined : Icons.blur_on_rounded,
                     tone: s.ambiguity == 0 ? PillTone.warning : PillTone.success,
                   ),
@@ -103,9 +103,9 @@ class _BeaconPageState extends State<BeaconPage> {
                 const Divider(),
                 _row(context, t('Konum belirsizliği'), '${s.ambiguity}  (${ambiguityLabels[s.ambiguity]})'),
                 const Divider(),
-                _row(context, 'Yol (path)', s.path.isEmpty ? t('(boş)') : s.path),
+                _row(context, t('Yol (path)'), s.path.isEmpty ? t('(boş)') : s.path),
                 const Divider(),
-                _row(context, 'Yorum', s.comment.isEmpty ? t('(boş)') : s.comment),
+                _row(context, t('Yorum'), s.comment.isEmpty ? t('(boş)') : s.comment),
               ]),
             ),
             const SizedBox(height: Gaps.m),

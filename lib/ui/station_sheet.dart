@@ -78,15 +78,15 @@ class StationSheet extends StatelessWidget {
     final scheme = theme.colorScheme;
     final ownPoint = own;
     final rows = <(String, String)>[
-      ('Konum', _positionText(p)),
+      (t('Konum'), _positionText(p)),
       if (ownPoint != null)
         (
-          'Mesafe',
+          t('Mesafe'),
           t('{v1} · {v2} yönünde', {'v1': formatDistance(distanceKm(ownPoint.lat, ownPoint.lon, p.lat, p.lon)), 'v2': compassPoint(bearingDegrees(ownPoint.lat, ownPoint.lon, p.lat, p.lon))}),
         ),
       if (p.speedKmh != null || p.courseDeg != null) (t('Hız / yön'), _motionText(p)),
       if (p.altitudeM != null) (t('Yükseklik'), '${p.altitudeM!.round()} m'),
-      ('Son duyulma', '${formatAge(now.difference(station.lastHeard))} · ${formatClock(station.lastHeard)} · ${station.packetCount} paket'),
+      (t('Son duyulma'), t('{age} · {clock} · {n} paket', {'age': formatAge(now.difference(station.lastHeard)), 'clock': formatClock(station.lastHeard), 'n': station.packetCount})),
       (t('Nasıl duyuldu'), station.viaDigipeater ? t('Digipeater üzerinden: {v1}', {'v1': station.path}) : t('Doğrudan duyuldu')),
     ];
     return SafeArea(
@@ -108,7 +108,7 @@ class StationSheet extends StatelessWidget {
                 Text(
                   [
                     symbol?.info.name ?? '${p.symbolTable}${p.symbolCode}',
-                    if (station.isObject) 'nesne (sahibi: ${station.owner})',
+                    if (station.isObject) t('nesne (sahibi: {owner})', {'owner': station.owner}),
                   ].join(' · '),
                   style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
@@ -170,12 +170,12 @@ class StationSheet extends StatelessWidget {
     final text = '${p.lat.toStringAsFixed(5)}, ${p.lon.toStringAsFixed(5)}';
     if (p.ambiguity == 0) return text;
     const sizes = ['', '~200 m', '~2 km', '~20 km', '~200 km'];
-    return '$text (belirsiz konum, ${sizes[p.ambiguity]})';
+    return t('{text} (belirsiz konum, {size})', {'text': text, 'size': sizes[p.ambiguity]});
   }
 
   String _motionText(AprsPosition p) {
     final parts = <String>[
-      if (p.speedKmh != null) '${p.speedKmh!.toStringAsFixed(1)} km/sa',
+      if (p.speedKmh != null) t('{v1} km/sa', {'v1': p.speedKmh!.toStringAsFixed(1)}),
       if (p.courseDeg != null) '${p.courseDeg}° (${compassPoint(p.courseDeg!.toDouble())})',
     ];
     return parts.join(' · ');

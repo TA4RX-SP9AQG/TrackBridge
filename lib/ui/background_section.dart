@@ -42,9 +42,9 @@ class BackgroundSection extends StatelessWidget {
           (t('Kalp atışı'), '${hb.count}'),
           (t('Son atış'), hb.lastTick == null ? '-' : formatClockSeconds(hb.lastTick!)),
           (t('Çalışma süresi'), formatDuration(tools.heartbeat.uptime)),
-          (t('En uzun boşluk'), '${hb.maxGapSeconds} sn'),
+          (t('En uzun boşluk'), t('{v1} sn', {'v1': hb.maxGapSeconds})),
           ('Tracker', link.isConnected ? t('Bağlı ({v1})', {'v1': link.deviceName ?? 'tracker'}) : t('Bağlı değil')),
-          ('Duyulan paket', '${controller.heard.length}'),
+          (t('Duyulan paket'), '${controller.heard.length}'),
           if (previous != null)
             (
               t('Önceki oturum'),

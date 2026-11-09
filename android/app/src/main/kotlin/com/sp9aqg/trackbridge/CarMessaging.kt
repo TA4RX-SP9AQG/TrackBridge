@@ -78,8 +78,8 @@ object CarMessaging {
     private fun ensureNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
-        val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, "APRS mesajları", NotificationManager.IMPORTANCE_HIGH)
-        channel.description = "Size gelen APRS mesajları. Android Auto'da sesli okunur."
+        val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, context.getString(R.string.channel_messages_name), NotificationManager.IMPORTANCE_HIGH)
+        channel.description = context.getString(R.string.channel_messages_description)
         manager.createNotificationChannel(channel)
     }
 
@@ -108,20 +108,20 @@ object CarMessaging {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
 
-        val me = Person.Builder().setName("Siz").setKey("self").build()
+        val me = Person.Builder().setName(context.getString(R.string.person_me)).setKey("self").build()
         val sender = Person.Builder().setName(peer).setKey(peer).build()
         val style = NotificationCompat.MessagingStyle(me)
         unread[peer].orEmpty().forEach { style.addMessage(it.text, it.timeMillis, sender) }
         extraNotes[peer]?.let { style.addMessage(it, System.currentTimeMillis(), Person.Builder().setName("TrackBridge").setKey("app").build()) }
 
         val id = idFor(peer)
-        val remoteInput = RemoteInput.Builder(KEY_REPLY_TEXT).setLabel("Yanıt").build()
-        val replyAction = NotificationCompat.Action.Builder(R.drawable.ic_stat_trackbridge, "Yanıtla", receiverIntent(context, peer, ACTION_REPLY, id * 2, mutable = true))
+        val remoteInput = RemoteInput.Builder(KEY_REPLY_TEXT).setLabel(context.getString(R.string.action_reply_label)).build()
+        val replyAction = NotificationCompat.Action.Builder(R.drawable.ic_stat_trackbridge, context.getString(R.string.action_reply), receiverIntent(context, peer, ACTION_REPLY, id * 2, mutable = true))
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
             .setShowsUserInterface(false)
             .addRemoteInput(remoteInput)
             .build()
-        val readAction = NotificationCompat.Action.Builder(R.drawable.ic_stat_trackbridge, "Okundu", receiverIntent(context, peer, ACTION_MARK_READ, id * 2 + 1, mutable = false))
+        val readAction = NotificationCompat.Action.Builder(R.drawable.ic_stat_trackbridge, context.getString(R.string.action_mark_read), receiverIntent(context, peer, ACTION_MARK_READ, id * 2 + 1, mutable = false))
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
             .setShowsUserInterface(false)
             .build()
@@ -155,7 +155,7 @@ object CarMessaging {
     fun reply(context: Context, peer: String, text: String, done: () -> Unit) {
         val ch = channel
         if (ch == null) {
-            failReply(context, peer, "Uygulama hazır değil, yanıt gönderilemedi.")
+            failReply(context, peer, context.getString(R.string.error_app_not_ready))
             done()
             return
         }
@@ -168,25 +168,25 @@ object CarMessaging {
                 done()
             }
         }
-        val timeout = Runnable { finish { failReply(context, peer, "Yanıt zaman aşımına uğradı, gönderilemedi.") } }
+        val timeout = Runnable { finish { failReply(context, peer, context.getString(R.string.error_reply_timeout)) } }
         handler.postDelayed(timeout, REPLY_TIMEOUT_MS)
         ch.invokeMethod("reply", mapOf("peer" to peer, "text" to text), object : MethodChannel.Result {
             override fun success(result: Any?) {
                 handler.removeCallbacks(timeout)
                 val map = result as? Map<*, *>
                 val sent = map?.get("sent") == true
-                val spoken = map?.get("spoken") as? String ?: "Yanıt gönderilemedi."
+                val spoken = map?.get("spoken") as? String ?: context.getString(R.string.error_reply_failed)
                 finish { if (sent) markRead(context, peer) else failReply(context, peer, spoken) }
             }
 
             override fun error(code: String, message: String?, details: Any?) {
                 handler.removeCallbacks(timeout)
-                finish { failReply(context, peer, "Yanıt gönderilemedi.") }
+                finish { failReply(context, peer, context.getString(R.string.error_reply_failed)) }
             }
 
             override fun notImplemented() {
                 handler.removeCallbacks(timeout)
-                finish { failReply(context, peer, "Yanıt gönderilemedi.") }
+                finish { failReply(context, peer, context.getString(R.string.error_reply_failed)) }
             }
         })
     }

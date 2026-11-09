@@ -56,7 +56,7 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
     final s = widget.controller.settings;
     final exact = s.ambiguity == 0;
     final what = _mode == AutoBeaconMode.interval
-        ? 'her $_minutes dakikada bir'
+        ? t('her {minutes} dakikada bir', {'minutes': _minutes})
         : t('hareketinize göre (hızlandıkça ve dönüşlerde daha sık)');
     final result = await showDialog<bool>(
       context: context,
@@ -129,7 +129,7 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
         StartResult.notConnected => t('Önce Bağlantı sekmesinden tracker\'a bağlanın.'),
         StartResult.noPosition => _phoneSource
             ? t('Güncel GPS konumu alınamadı. Açık havada, uygulama açıkken tekrar deneyin.')
-            : 'Ayarlar\'dan sabit konum girin.',
+            : t('Ayarlar\'dan sabit konum girin.'),
         StartResult.badConfig => t('Ayarlar geçersiz (aralık en az 1 dakika olmalı).'),
         StartResult.needsPhoneGps => t('Akıllı mod hareket gerektirir: Ayarlar\'da konum kaynağı olarak "Telefon GPS"ini seçin.'),
       };
@@ -173,7 +173,7 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
                 DropdownButtonFormField<String>(
                   initialValue: _profile,
                   decoration: InputDecoration(labelText: t('Profil')),
-                  items: [for (final p in SmartBeaconParams.presets.keys) DropdownMenuItem(value: p, child: Text(p))],
+                  items: [for (final p in SmartBeaconParams.presets.keys) DropdownMenuItem(value: p, child: Text(t(p)))],
                   onChanged: running ? null : (v) => setState(() => _profile = v ?? _profile),
                 ),
                 const SizedBox(height: Gaps.s),

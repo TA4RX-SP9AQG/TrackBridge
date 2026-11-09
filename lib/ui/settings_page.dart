@@ -122,7 +122,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _checkNotifications() async {
     final granted = await (widget.requestNotificationPermission ?? ensureNotificationPermission)();
     if (!mounted) return;
-    _fail(granted ? 'Bildirim izni verildi.' : t('Bildirim izni verilmedi. Android ayarlarından TrackBridge için bildirimleri açın.'));
+    _fail(granted ? t('Bildirim izni verildi.') : t('Bildirim izni verilmedi. Android ayarlarından TrackBridge için bildirimleri açın.'));
   }
 
   void _fail(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -173,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (wlTouched) {
       final problem = WavelogConfig.urlProblem(wlUrl);
       if (problem != null) {
-        _fail('Wavelog: $problem');
+        _fail(t('Wavelog: {problem}', {'problem': problem}));
         return;
       }
       if (int.tryParse(wlProfile) == null) {
@@ -206,8 +206,9 @@ class _SettingsPageState extends State<SettingsPage> {
       lastDeviceId: current.lastDeviceId,
       lastDeviceName: current.lastDeviceName,
       tileUrl: tileUrl,
+      language: current.language,
     ));
-    if (mounted) _fail('Kaydedildi.');
+    if (mounted) _fail(t('Kaydedildi.'));
   }
 
   @override
@@ -391,6 +392,19 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
+        SectionHeader(t('Dil')),
+        SurfaceCard(
+          child: SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: 'system', label: Text(t('Telefon dili'))),
+              const ButtonSegment(value: 'tr', label: Text('Türkçe')),
+              const ButtonSegment(value: 'en', label: Text('English')),
+            ],
+            selected: {widget.controller.settings.language},
+            onSelectionChanged: (v) => _applyNow((saved) => saved.copyWith(language: v.first)),
+          ),
+        ),
         SectionHeader(t('Hakkında')),
         SurfaceCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -448,9 +462,9 @@ class _SymbolTile extends StatelessWidget {
         const SizedBox(width: Gaps.l),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(resolved?.info.name ?? 'Bilinmeyen sembol', style: theme.textTheme.titleMedium),
+            Text(resolved?.info.name ?? t('Bilinmeyen sembol'), style: theme.textTheme.titleMedium),
             Text(
-              t('Beacon simgesi  ({table}{code}{v1})', {'table': table, 'code': code, 'v1': overlay == null ? '' : ', katman $overlay'}),
+              t('Beacon simgesi  ({table}{code}{v1})', {'table': table, 'code': code, 'v1': overlay == null ? '' : t(', katman {overlay}', {'overlay': overlay})}),
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ]),

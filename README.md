@@ -38,7 +38,11 @@ Many LoRa APRS trackers (for example the Heltec Wireless Tracker running the
 - **Automatic beacons**: fixed interval, or SmartBeaconing (HamHUD algorithm: beacons more often when you move faster, rarely when standing, and at corners) with walking / bicycle / car profiles. Always off at start, needs a connected tracker, stops if the connection drops, 60 s minimum gap, every automatic beacon is logged
 - **Android Auto:** incoming messages are shown and read aloud in the car; an optional spoken reply (off by default, see [docs/ANDROID_AUTO.md](docs/ANDROID_AUTO.md) for its limits)
 
-Planned: background operation with message notifications, automatic and SmartBeaconing beacons, a map picker for the fixed position, ready-made messages and reminders for events such as #APRSThursday.
+- **Works in the background:** an optional foreground service keeps the tracker connection alive with the screen off, message notifications arrive, and automatic beacons can use the phone's GPS
+- **Wavelog:** save a message conversation to your own [Wavelog](https://www.wavelog.org/) logbook as a QSO (mode PKT) - only when you tap the button, you see what is sent first
+- **English and Turkish interface:** follows the phone language, or choose it in Settings (the notification texts follow the phone language)
+
+Planned: a map picker for the fixed position, ready-made messages and reminders for events such as #APRSThursday.
 
 ## Tested with
 
@@ -63,10 +67,12 @@ firmware authors, APRSdroid, aprs.fi, or the owners of the APRS name.
 ## Privacy
 
 No accounts, no analytics, no ads. The only network traffic is **map tiles**, and only after you open the Harita
-tab: the tile server (OpenStreetMap by default) sees your IP address and the area you look at. "Yol tarifi" hands
+(Map) tab: the tile server (OpenStreetMap by default) sees your IP address and the area you look at. "Yol tarifi" hands
 the station's coordinates to the navigation app you choose. Location is read from the phone only if you choose
 "phone GPS" as the beacon source, and it leaves the phone only inside a beacon you confirm. The map shows only
-what your own tracker heard on the radio; there is no internet (APRS-IS) feed.
+what your own tracker heard on the radio; there is no internet (APRS-IS) feed. With automatic beacons on, the phone's GPS runs in
+the background (with a visible notification) until you stop it. If you use Wavelog, the QSO you confirm is sent to
+the server address you entered, with the API key stored in the app's private storage on the phone (not encrypted).
 
 ## Build
 

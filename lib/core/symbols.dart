@@ -5,6 +5,8 @@
 /// specification. The images live in the sprite sheets (see `ui/symbol_widget.dart`).
 library;
 
+import '../l10n/app_strings.dart';
+
 enum SymbolCategory {
   stations('Telsiz ve istasyonlar'),
   vehicles('Araçlar'),
@@ -14,9 +16,11 @@ enum SymbolCategory {
   places('Yerler ve işaretler'),
   other('Diğer');
 
-  const SymbolCategory(this.label);
+  const SymbolCategory(this._label);
 
-  final String label;
+  final String _label;
+
+  String get label => t(_label);
 }
 
 class SymbolInfo {

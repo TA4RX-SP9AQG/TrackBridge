@@ -28,6 +28,7 @@ class AppSettings {
     this.lastDeviceId,
     this.lastDeviceName,
     this.tileUrl = kDefaultTileUrl,
+    this.language = 'system',
   });
 
   /// Our station, `CALL-SSID`.
@@ -70,6 +71,9 @@ class AppSettings {
   /// Map tile URL template with {z}/{x}/{y}.
   final String tileUrl;
 
+  /// Interface language: `system` (follow the phone), `tr` or `en`.
+  final String language;
+
   AppSettings copyWith({
     String? callsign,
     String? path,
@@ -90,6 +94,7 @@ class AppSettings {
     String? lastDeviceId,
     String? lastDeviceName,
     String? tileUrl,
+    String? language,
   }) =>
       AppSettings(
         callsign: callsign ?? this.callsign,
@@ -111,6 +116,7 @@ class AppSettings {
         lastDeviceId: lastDeviceId ?? this.lastDeviceId,
         lastDeviceName: lastDeviceName ?? this.lastDeviceName,
         tileUrl: tileUrl ?? this.tileUrl,
+        language: language ?? this.language,
       );
 }
 

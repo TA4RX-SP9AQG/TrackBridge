@@ -41,6 +41,7 @@ class PrefsSettingsStore implements SettingsStore {
       lastDeviceId: p.getString('${_prefix}lastDeviceId'),
       lastDeviceName: p.getString('${_prefix}lastDeviceName'),
       tileUrl: _validTileUrl(p.getString('${_prefix}tileUrl')),
+      language: _validLanguage(p.getString('${_prefix}language')),
     );
   }
 
@@ -67,8 +68,11 @@ class PrefsSettingsStore implements SettingsStore {
       _setOrRemoveString(p, '${_prefix}lastDeviceId', s.lastDeviceId),
       _setOrRemoveString(p, '${_prefix}lastDeviceName', s.lastDeviceName),
       p.setString('${_prefix}tileUrl', s.tileUrl),
+      p.setString('${_prefix}language', s.language),
     ]);
   }
+
+  String _validLanguage(String? stored) => const {'system', 'tr', 'en'}.contains(stored) ? stored! : 'system';
 
   String _validTileUrl(String? stored) => stored != null && isValidTileUrl(stored) ? stored : kDefaultTileUrl;
 

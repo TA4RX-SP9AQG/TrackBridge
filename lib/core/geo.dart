@@ -32,7 +32,7 @@ String formatDistance(double km) {
 
 /// Turkish eight-point compass: K, KD, D, GD, G, GB, B, KB.
 String compassPoint(double degrees) {
-  const points = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
+  final points = [t('K'), t('KD'), t('D'), t('GD'), t('G'), t('GB'), t('B'), t('KB')];
   final index = ((degrees % 360) / 45).round() % 8;
   return points[index];
 }

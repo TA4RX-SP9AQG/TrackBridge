@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import '../l10n/app_strings.dart';
+
 /// One GPS reading, reduced to what SmartBeaconing needs.
 class SmartFix {
   const SmartFix({required this.speedKmh, required this.time, this.headingDeg});
@@ -71,9 +73,9 @@ class SmartBeaconParams {
 
   /// Throws [ArgumentError] when the values make no sense.
   void validate() {
-    if (slowSpeedKmh <= 0 || fastSpeedKmh <= slowSpeedKmh) throw ArgumentError('Hızlar: yavaş < hızlı olmalı.');
+    if (slowSpeedKmh <= 0 || fastSpeedKmh <= slowSpeedKmh) throw ArgumentError(t('Hızlar: yavaş < hızlı olmalı.'));
     if (fastRateSeconds < minRateSeconds || slowRateSeconds <= fastRateSeconds) {
-      throw ArgumentError('Aralıklar: hızlı >= $minRateSeconds sn ve yavaş > hızlı olmalı.');
+      throw ArgumentError(t('Aralıklar: hızlı >= {minRateSeconds} sn ve yavaş > hızlı olmalı.', {'minRateSeconds': minRateSeconds}));
     }
   }
 

@@ -1,3 +1,5 @@
+import '../l10n/app_strings.dart';
+
 enum PacketKind { position, message, status, other }
 
 /// A heard TNC2 line split into the parts a list row needs.
@@ -34,7 +36,7 @@ PacketSummary summarizePacket(String tnc2) {
     var body = info.substring(11);
     final ack = _ack.firstMatch(body);
     if (ack != null) {
-      body = ack.group(1) == 'ack' ? 'onay (ack ${ack.group(2)})' : 'ret (rej ${ack.group(2)})';
+      body = ack.group(1) == 'ack' ? t('onay (ack {v1})', {'v1': ack.group(2)}) : t('ret (rej {v1})', {'v1': ack.group(2)});
     } else {
       final brace = body.lastIndexOf('{');
       if (brace >= 0) body = body.substring(0, brace);

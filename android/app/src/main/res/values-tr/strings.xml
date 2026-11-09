@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_messages_name">APRS mesajları</string>
+    <string name="channel_messages_description">Size gelen APRS mesajları. Android Auto\'da sesli okunur.</string>
+    <string name="person_me">Siz</string>
+    <string name="action_reply_label">Yanıt</string>
+    <string name="action_reply">Yanıtla</string>
+    <string name="action_mark_read">Okundu</string>
+    <string name="error_app_not_ready">Uygulama hazır değil, yanıt gönderilemedi.</string>
+    <string name="error_reply_timeout">Yanıt zaman aşımına uğradı, gönderilemedi.</string>
+    <string name="error_reply_failed">Yanıt gönderilemedi.</string>
+</resources>

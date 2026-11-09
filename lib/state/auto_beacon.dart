@@ -118,7 +118,7 @@ class AutoBeaconController extends ChangeNotifier {
     _lastSent = null;
     _status = t('Başlatılıyor...');
     notifyListeners();
-    await _send('ilk beacon');
+    await _send(t('ilk beacon'));
     return StartResult.started;
   }
 
@@ -142,7 +142,7 @@ class AutoBeaconController extends ChangeNotifier {
     }
     final fix = _fix;
     if (fix == null) {
-      _setStatus('GPS konumu bekleniyor');
+      _setStatus(t('GPS konumu bekleniyor'));
       return;
     }
     final problem = _fixProblem(fix);
@@ -152,7 +152,7 @@ class AutoBeaconController extends ChangeNotifier {
     }
     final decision = _engine!.evaluate(SmartFix(speedKmh: fix.speedKmh, headingDeg: fix.headingDeg, time: now));
     if (decision == BeaconDecision.none) {
-      _setStatus('Hareket izleniyor');
+      _setStatus(t('Hareket izleniyor'));
       return;
     }
     await _send(decision == BeaconDecision.turn ? t('dönüş') : t('hız'));
@@ -182,7 +182,7 @@ class AutoBeaconController extends ChangeNotifier {
     if (_busy) return;
     final point = _resolvePosition();
     if (point == null) {
-      _setStatus(_usesPhone ? (_fix == null ? 'GPS konumu bekleniyor' : (_fixProblem(_fix!) ?? 'Konum yok')) : t('Konum ayarlı değil'));
+      _setStatus(_usesPhone ? (_fix == null ? t('GPS konumu bekleniyor') : (_fixProblem(_fix!) ?? t('Konum yok'))) : t('Konum ayarlı değil'));
       return;
     }
     _busy = true;

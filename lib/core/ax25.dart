@@ -66,7 +66,7 @@ class Ax25Frame {
 
   Uint8List encode() {
     if (digipeaters.length > maxDigipeaters) {
-      throw ArgumentError('En fazla $maxDigipeaters digipeater olabilir.');
+      throw ArgumentError(t('En fazla {maxDigipeaters} digipeater olabilir.', {'maxDigipeaters': maxDigipeaters}));
     }
     final out = <int>[
       ...destination.encode(last: false),

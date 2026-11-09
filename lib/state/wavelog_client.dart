@@ -155,7 +155,7 @@ class WavelogClient {
     final json = _json(r.body);
     final status = json?['status'];
     if (r.status >= 200 && r.status < 300 && (status == 'created' || status == 'ok')) {
-      return const WavelogResult(true, 'Wavelog\'a kaydedildi.');
+      return WavelogResult(true, t('Wavelog\'a kaydedildi.'));
     }
     if (r.status >= 200 && r.status < 300 && json == null) {
       return WavelogResult(false, t('Sunucu yanıtı anlaşılamadı; kayıt yapıldığı doğrulanamadı.'));
@@ -167,7 +167,7 @@ class WavelogClient {
     final json = _json(r.body);
     final reason = json?['reason'] ?? json?['message'];
     final text = (reason is String && reason.isNotEmpty ? reason : 'HTTP ${r.status}').replaceAll(c.apiKey.trim(), '***');
-    return 'Wavelog reddetti: $text';
+    return t('Wavelog reddetti: {text}', {'text': text});
   }
 
   Map<String, Object?>? _json(String body) {

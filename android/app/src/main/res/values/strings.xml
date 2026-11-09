@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_messages_name">APRS messages</string>
+    <string name="channel_messages_description">APRS messages addressed to you. Read aloud in Android Auto.</string>
+    <string name="person_me">You</string>
+    <string name="action_reply_label">Reply</string>
+    <string name="action_reply">Reply</string>
+    <string name="action_mark_read">Mark as read</string>
+    <string name="error_app_not_ready">The app is not ready, the reply could not be sent.</string>
+    <string name="error_reply_timeout">The reply timed out and could not be sent.</string>
+    <string name="error_reply_failed">The reply could not be sent.</string>
+</resources>

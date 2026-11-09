@@ -34,10 +34,14 @@ class AppController extends ChangeNotifier {
     MessageNotifier? notifier,
     this._messageStore,
     WavelogClient? wavelog,
+    this._systemLanguage,
   })  : wavelog = wavelog ?? WavelogClient(),
         _notifier = notifier ?? const NoopMessageNotifier(),
         _positionProvider = positionProvider ?? readPhonePosition,
         _now = now ?? DateTime.now;
+
+  /// Language code of the phone (e.g. `tr`). Null leaves the interface language untouched (tests).
+  final String? _systemLanguage;
 
   static const int maxHeard = 200;
   static const Duration _ackThrottle = Duration(seconds: 10);
@@ -101,6 +105,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> init() async {
     _settings = await _store.load();
+    _applyLanguage();
     final stored = await _messageStore?.load();
     if (stored != null && stored.isNotEmpty) {
       _conversations = Map<String, List<ChatMessage>>.unmodifiable({
@@ -119,8 +124,15 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Points the interface language at the stored preference (`system` follows the phone).
+  void _applyLanguage() {
+    if (_systemLanguage == null && _settings.language == 'system') return;
+    L10n.setLanguage(AppLanguage.resolve(_settings.language, _systemLanguage));
+  }
+
   Future<void> updateSettings(AppSettings next) async {
     _settings = next;
+    _applyLanguage();
     await _store.save(next);
     notifyListeners();
   }

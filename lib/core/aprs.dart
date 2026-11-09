@@ -54,7 +54,7 @@ String _paddedAddressee(String to) {
 String buildMessageInfo({required String to, required String text, String? id}) {
   if (text.isEmpty) throw FormatException(t('Mesaj boş olamaz.'));
   if (text.length > kMaxMessageLength) {
-    throw const FormatException('Mesaj en fazla $kMaxMessageLength karakter olabilir.');
+    throw FormatException(t('Mesaj en fazla {kMaxMessageLength} karakter olabilir.', {'kMaxMessageLength': kMaxMessageLength}));
   }
   if (!_isPrintableAscii(text) || text.contains('{') || text.contains('|') || text.contains('~')) {
     throw FormatException(t('Mesaj yalnızca ASCII olmalı ({, | ve ~ kullanılamaz).'));
