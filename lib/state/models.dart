@@ -4,7 +4,9 @@ import '../core/tile_url.dart';
 import 'wavelog_client.dart';
 import '../l10n/app_strings.dart';
 
-enum PositionSource { manual, phone }
+/// Where the position of a beacon comes from: a fixed position, the phone's GPS, or the GPS of the
+/// tracker itself (read from the beacons the tracker sends to the phone).
+enum PositionSource { manual, phone, tracker }
 
 /// User settings. Immutable; use [copyWith].
 class AppSettings {
@@ -16,6 +18,7 @@ class AppSettings {
     this.comment = 'TrackBridge',
     this.ambiguity = 2,
     this.positionSource = PositionSource.manual,
+    this.trackerCallsign = '',
     this.manualLat,
     this.manualLon,
     this.autoAck = true,
@@ -43,6 +46,9 @@ class AppSettings {
   /// APRS position ambiguity 0-4 (2 is roughly 2 km).
   final int ambiguity;
   final PositionSource positionSource;
+
+  /// Callsign the tracker's own beacons are sent with (`CALL-SSID`). Empty means the same as [callsign].
+  final String trackerCallsign;
   final double? manualLat;
   final double? manualLon;
 
@@ -82,6 +88,7 @@ class AppSettings {
     String? comment,
     int? ambiguity,
     PositionSource? positionSource,
+    String? trackerCallsign,
     double? manualLat,
     double? manualLon,
     bool? autoAck,
@@ -104,6 +111,7 @@ class AppSettings {
         comment: comment ?? this.comment,
         ambiguity: ambiguity ?? this.ambiguity,
         positionSource: positionSource ?? this.positionSource,
+        trackerCallsign: trackerCallsign ?? this.trackerCallsign,
         manualLat: manualLat ?? this.manualLat,
         manualLon: manualLon ?? this.manualLon,
         autoAck: autoAck ?? this.autoAck,
@@ -205,4 +213,15 @@ class HeardPacket {
 
   final String tnc2;
   final DateTime time;
+}
+
+/// A position the tracker's own GPS sent, with the time the phone heard it.
+class TrackerFix {
+  const TrackerFix({required this.lat, required this.lon, required this.time, this.speedKmh, this.courseDeg});
+
+  final double lat;
+  final double lon;
+  final DateTime time;
+  final double? speedKmh;
+  final int? courseDeg;
 }

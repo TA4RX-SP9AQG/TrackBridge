@@ -26,7 +26,9 @@ Many LoRa APRS trackers (for example the Heltec Wireless Tracker running the
 - Live list of packets the tracker hears on the radio
 - APRS messages: send, receive, delivery state (sent, repeated by a digipeater, acknowledged), automatic `ack`
   for messages addressed to you (rate-limited, can be turned off)
-- Position beacon from a fixed position or the phone's GPS, with **APRS position ambiguity** (default about 2 km):
+- Beacon position from a fixed position, the phone's GPS, or the **tracker's own GPS** (for trackers with a built-in or
+  attached GPS: the firmware passes the beacons it transmits to the phone, and the app reads the position from the
+  newest one; ignored when older than 10 minutes), with **APRS position ambiguity** (default about 2 km):
   the hidden digits are never put into the packet
 - Visual APRS symbol picker with the real icons, including overlay characters
 - **Map of the stations the tracker hears over the radio** (positions in uncompressed, compressed and Mic-E

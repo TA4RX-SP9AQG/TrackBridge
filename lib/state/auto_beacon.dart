@@ -92,6 +92,7 @@ class AutoBeaconController extends ChangeNotifier {
   List<AutoBeaconLogEntry> get log => List.unmodifiable(_log);
 
   bool get _usesPhone => app.settings.positionSource == PositionSource.phone;
+  bool get _usesTracker => app.settings.positionSource == PositionSource.tracker;
 
   /// Feed GPS readings from the phone here (a no-op for the fixed position source).
   void onFix(PhoneFix fix) {
@@ -172,6 +173,7 @@ class AutoBeaconController extends ChangeNotifier {
       if (fix == null || _fixProblem(fix) != null) return null;
       return GeoPoint(fix.lat, fix.lon);
     }
+    if (_usesTracker) return app.freshTrackerPoint;
     final s = app.settings;
     final lat = s.manualLat;
     final lon = s.manualLon;
@@ -182,7 +184,7 @@ class AutoBeaconController extends ChangeNotifier {
     if (_busy) return;
     final point = _resolvePosition();
     if (point == null) {
-      _setStatus(_usesPhone ? (_fix == null ? t('GPS konumu bekleniyor') : (_fixProblem(_fix!) ?? t('Konum yok'))) : t('Konum ayarlı değil'));
+      _setStatus(_noPositionStatus());
       return;
     }
     _busy = true;
@@ -200,6 +202,14 @@ class AutoBeaconController extends ChangeNotifier {
     } finally {
       _busy = false;
     }
+  }
+
+  String _noPositionStatus() {
+    if (_usesTracker) return t('Tracker GPS konumu bekleniyor');
+    if (!_usesPhone) return t('Konum ayarlı değil');
+    final fix = _fix;
+    if (fix == null) return t('GPS konumu bekleniyor');
+    return _fixProblem(fix) ?? t('Konum yok');
   }
 
   void _setStatus(String text) {

@@ -127,9 +127,12 @@ class _AutoBeaconCardState extends State<AutoBeaconCard> {
   String _explain(StartResult r) => switch (r) {
         StartResult.started => '',
         StartResult.notConnected => t('Önce Bağlantı sekmesinden tracker\'a bağlanın.'),
-        StartResult.noPosition => _phoneSource
-            ? t('Güncel GPS konumu alınamadı. Açık havada, uygulama açıkken tekrar deneyin.')
-            : t('Ayarlar\'dan sabit konum girin.'),
+        StartResult.noPosition => switch (widget.controller.settings.positionSource) {
+          PositionSource.tracker =>
+            t('Tracker henüz GPS konumu yayınlamadı. Tracker\'ın GPS\'i konum bulup kendi beacon\'ını attığında burada kullanılır.'),
+          PositionSource.phone => t('Güncel GPS konumu alınamadı. Açık havada, uygulama açıkken tekrar deneyin.'),
+          PositionSource.manual => t('Ayarlar\'dan sabit konum girin.'),
+        },
         StartResult.badConfig => t('Ayarlar geçersiz (aralık en az 1 dakika olmalı).'),
         StartResult.needsPhoneGps => t('Akıllı mod hareket gerektirir: Ayarlar\'da konum kaynağı olarak "Telefon GPS"ini seçin.'),
       };

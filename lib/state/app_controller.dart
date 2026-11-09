@@ -43,6 +43,9 @@ class AppController extends ChangeNotifier {
   /// Language code of the phone (e.g. `tr`). Null leaves the interface language untouched (tests).
   final String? _systemLanguage;
 
+  /// The tracker's own beacons are sparse (its own interval), so its position stays usable this long.
+  static const Duration maxTrackerFixAge = Duration(minutes: 10);
+
   static const int maxHeard = 200;
   static const Duration _ackThrottle = Duration(seconds: 10);
 
@@ -64,6 +67,7 @@ class AppController extends ChangeNotifier {
   final DateTime Function() _now;
 
   AppSettings _settings = const AppSettings();
+  TrackerFix? _trackerFix;
   KissDeframer _deframer = KissDeframer();
   List<HeardPacket> _heard = const <HeardPacket>[];
   Map<String, List<ChatMessage>> _conversations = const <String, List<ChatMessage>>{};
@@ -89,6 +93,24 @@ class AppController extends ChangeNotifier {
 
   TrackerLink get link => _link;
   AppSettings get settings => _settings;
+
+  /// The newest position the tracker's own GPS sent (null when none, or after a disconnect).
+  TrackerFix? get trackerFix => _trackerFix;
+
+  /// The tracker's position, or null when it has not sent one in the last [maxTrackerFixAge].
+  GeoPoint? get freshTrackerPoint {
+    final fix = _trackerFix;
+    if (fix == null || _now().difference(fix.time) > maxTrackerFixAge) return null;
+    return GeoPoint(fix.lat, fix.lon);
+  }
+
+  /// Our own position for the map: the fixed one, or the tracker's with the tracker source.
+  GeoPoint? get ownPosition {
+    if (_settings.positionSource == PositionSource.tracker) return freshTrackerPoint;
+    final lat = _settings.manualLat;
+    final lon = _settings.manualLon;
+    return lat == null || lon == null ? null : GeoPoint(lat, lon);
+  }
   LinkInfo get linkInfo => _link.info;
 
   /// Newest first.
@@ -309,6 +331,12 @@ class AppController extends ChangeNotifier {
             throw FormatException(t('Ayarlar\'dan sabit konum girin ya da telefon GPS\'ini seçin.'));
           }
           point = GeoPoint(lat, lon);
+        case PositionSource.tracker:
+          final fresh = freshTrackerPoint;
+          if (fresh == null) {
+            throw FormatException(t('Tracker henüz GPS konumu yayınlamadı. Tracker\'ın GPS\'i konum bulup kendi beacon\'ını attığında burada kullanılır.'));
+          }
+          point = fresh;
         case PositionSource.phone:
           try {
             point = await _positionProvider();
@@ -355,6 +383,7 @@ class AppController extends ChangeNotifier {
     if (info.status != _lastStatus) {
       _lastStatus = info.status;
       _deframer = KissDeframer(); // drop any half-received frame
+      if (info.status != LinkStatus.connected) _trackerFix = null; // another tracker may come next
     }
     final id = info.deviceId;
     if (info.isConnected && id != null && id != _settings.lastDeviceId) {
@@ -378,6 +407,7 @@ class AppController extends ChangeNotifier {
     );
     final position = parsePositionFrame(frame);
     if (position != null) {
+      _rememberTrackerFix(frame, position, now);
       _stations = _stations.update(
         Station.fromPacket(
           sender: _plain(frame.source),
@@ -393,6 +423,21 @@ class AppController extends ChangeNotifier {
     final message = info.startsWith(':') ? parseMessage(info) : null;
     if (message != null && _isCallsignSet) _handleMessage(frame, message, now);
     notifyListeners();
+  }
+
+  /// The firmware also sends the beacons it transmits itself (with its own GPS) to the phone.
+  /// A copy that a digipeater repeated is somebody else's relay, not the tracker's GPS.
+  void _rememberTrackerFix(Ax25Frame frame, AprsPosition position, DateTime now) {
+    if (position.objectName != null || frame.digipeaters.any((d) => d.repeated)) return;
+    final own = _trackerCallsignForMatching;
+    if (own == null || _plain(frame.source) != own) return;
+    _trackerFix = TrackerFix(lat: position.lat, lon: position.lon, time: now, speedKmh: position.speedKmh, courseDeg: position.courseDeg);
+  }
+
+  String? get _trackerCallsignForMatching {
+    final configured = _settings.trackerCallsign.trim();
+    final value = configured.isNotEmpty ? configured : _settings.callsign;
+    return isUsableCallsign(value) ? normalizeCallsign(value) : null;
   }
 
   bool get _isCallsignSet => isUsableCallsign(_settings.callsign);

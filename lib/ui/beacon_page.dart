@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/geo.dart';
 import '../core/symbols.dart';
 import '../state/app_controller.dart';
 import '../state/models.dart';
@@ -13,6 +14,19 @@ import 'widgets/ui_kit.dart';
 import '../l10n/app_strings.dart';
 
 /// Approximate size of the blanked square for each ambiguity level.
+/// Short name of a beacon position source.
+String sourceLabel(PositionSource source) => switch (source) {
+      PositionSource.manual => t('Sabit konum'),
+      PositionSource.phone => t('Telefon GPS'),
+      PositionSource.tracker => t('Tracker GPS'),
+    };
+
+IconData sourceIcon(PositionSource source) => switch (source) {
+      PositionSource.manual => Icons.home_outlined,
+      PositionSource.phone => Icons.my_location_rounded,
+      PositionSource.tracker => Icons.memory_rounded,
+    };
+
 const List<String> ambiguityLabels = <String>['~20 m', '~200 m', '~2 km', '~20 km', '~200 km'];
 
 class BeaconPage extends StatefulWidget {
@@ -82,8 +96,8 @@ class _BeaconPageState extends State<BeaconPage> {
                 const SizedBox(height: Gaps.l),
                 Wrap(spacing: Gaps.s, runSpacing: Gaps.s, children: [
                   StatusPill(
-                    s.positionSource == PositionSource.manual ? t('Sabit konum') : t('Telefon GPS\'i'),
-                    icon: s.positionSource == PositionSource.manual ? Icons.home_outlined : Icons.my_location_rounded,
+                    sourceLabel(s.positionSource),
+                    icon: sourceIcon(s.positionSource),
                   ),
                   StatusPill(
                     s.ambiguity == 0 ? t('Tam konum') : t('Belirsizlik {n} · {range}', {'n': s.ambiguity, 'range': ambiguityLabels[s.ambiguity]}),
@@ -99,8 +113,12 @@ class _BeaconPageState extends State<BeaconPage> {
               child: Column(children: [
                 _row(context, t('Çağrı işareti'), s.callsign.isEmpty ? t('(ayarlanmadı)') : s.callsign),
                 const Divider(),
-                _row(context, t('Konum kaynağı'), s.positionSource == PositionSource.manual ? 'Sabit konum' : 'Telefon GPS\'i'),
+                _row(context, t('Konum kaynağı'), sourceLabel(s.positionSource)),
                 const Divider(),
+                if (s.positionSource == PositionSource.tracker) ...[
+                  _row(context, t('Tracker GPS konumu'), _trackerFixText()),
+                  const Divider(),
+                ],
                 _row(context, t('Konum belirsizliği'), '${s.ambiguity}  (${ambiguityLabels[s.ambiguity]})'),
                 const Divider(),
                 _row(context, t('Yol (path)'), s.path.isEmpty ? t('(boş)') : s.path),
@@ -150,6 +168,15 @@ class _BeaconPageState extends State<BeaconPage> {
         );
       },
     );
+  }
+
+  /// When the tracker's own GPS position was last heard (or that it was not, yet).
+  String _trackerFixText() {
+    final fix = widget.controller.trackerFix;
+    if (fix == null) return t('henüz alınmadı');
+    final age = DateTime.now().difference(fix.time);
+    final text = t('{v1} ({v2})', {'v1': formatAge(age), 'v2': '${fix.lat.toStringAsFixed(4)}, ${fix.lon.toStringAsFixed(4)}'});
+    return widget.controller.freshTrackerPoint == null ? t('{v1} - eski, kullanılmaz', {'v1': text}) : text;
   }
 
   Widget _row(BuildContext context, String label, String value) {

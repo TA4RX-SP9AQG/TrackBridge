@@ -24,6 +24,7 @@ Future<AppController> openSettings(
 }
 
 void main() {
+  trackerSourceTests();
   testWidgets('picking a symbol is applied to the saved settings immediately, without pressing Kaydet',
       (tester) async {
     final controller = await openSettings(tester);
@@ -121,5 +122,40 @@ void main() {
       expect(asked, 1);
       expect(find.textContaining('verilmedi'), findsWidgets);
     });
+  });
+}
+
+void trackerSourceTests() {
+  testWidgets('choosing Tracker GPS is applied at once and shows the tracker callsign field', (tester) async {
+    final controller = await openSettings(tester);
+    expect(find.widgetWithText(TextField, 'Tracker çağrı işareti (boşsa yukarıdaki)'), findsNothing);
+    await tester.ensureVisible(find.text('Tracker GPS'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tracker GPS'));
+    await tester.pumpAndSettle();
+    expect(controller.settings.positionSource, PositionSource.tracker);
+    expect(find.widgetWithText(TextField, 'Tracker çağrı işareti (boşsa yukarıdaki)'), findsOneWidget);
+  });
+
+  testWidgets('the tracker callsign is validated and saved', (tester) async {
+    final controller = await openSettings(
+      tester,
+      settings: const AppSettings(callsign: 'SP9AQG-9', noticeAccepted: true, positionSource: PositionSource.tracker),
+    );
+    final field = find.widgetWithText(TextField, 'Tracker çağrı işareti (boşsa yukarıdaki)');
+    await tester.ensureVisible(field);
+    await tester.enterText(field, 'not a call!');
+    await tester.scrollUntilVisible(find.text('Kaydet'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Kaydet'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tracker çağrı işareti geçersiz (örn. SP9AQG-7).'), findsOneWidget);
+    expect(controller.settings.trackerCallsign, '');
+
+    await tester.ensureVisible(field);
+    await tester.enterText(field, 'sp9trk-7');
+    await tester.scrollUntilVisible(find.text('Kaydet'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Kaydet'));
+    await tester.pumpAndSettle();
+    expect(controller.settings.trackerCallsign, 'SP9TRK-7');
   });
 }

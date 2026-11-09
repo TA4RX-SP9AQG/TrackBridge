@@ -48,10 +48,8 @@ class _MapPageState extends State<MapPage> {
   DateTime _now() => (widget.now ?? DateTime.now)();
 
   OwnPoint? get _own {
-    final s = _c.settings;
-    final lat = s.manualLat;
-    final lon = s.manualLon;
-    return lat == null || lon == null ? null : OwnPoint(lat, lon);
+    final point = _c.ownPosition;
+    return point == null ? null : OwnPoint(point.lat, point.lon);
   }
 
   List<LatLng> _points(List<Station> stations) => [

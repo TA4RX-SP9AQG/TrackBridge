@@ -41,6 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _callsign = TextEditingController();
   final _path = TextEditingController();
   final _comment = TextEditingController();
+  final _trackerCall = TextEditingController();
   final _tileUrl = TextEditingController();
   final _position = TextEditingController();
   final _wlUrl = TextEditingController();
@@ -61,6 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _callsign.text = s.callsign;
     _path.text = s.path;
     _comment.text = s.comment;
+    _trackerCall.text = s.trackerCallsign;
     _tileUrl.text = s.tileUrl;
     _wlUrl.text = s.wavelogUrl;
     _wlKey.text = s.wavelogKey;
@@ -79,7 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    for (final c in [_callsign, _path, _comment, _position, _tileUrl, _wlUrl, _wlKey, _wlProfile, _wlFreq]) {
+    for (final c in [_callsign, _path, _comment, _trackerCall, _position, _tileUrl, _wlUrl, _wlKey, _wlProfile, _wlFreq]) {
       c.dispose();
     }
     super.dispose();
@@ -131,6 +133,11 @@ class _SettingsPageState extends State<SettingsPage> {
     final callsign = _callsign.text.trim().toUpperCase();
     if (!isUsableCallsign(callsign)) {
       _fail(t('Geçerli bir çağrı işareti girin (örn. SP9AQG-9). N0CALL kullanılamaz.'));
+      return;
+    }
+    final trackerCall = _trackerCall.text.trim().toUpperCase();
+    if (trackerCall.isNotEmpty && !isUsableCallsign(trackerCall)) {
+      _fail(t('Tracker çağrı işareti geçersiz (örn. SP9AQG-7).'));
       return;
     }
     final hops = _path.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
@@ -194,6 +201,7 @@ class _SettingsPageState extends State<SettingsPage> {
       comment: _comment.text,
       ambiguity: _ambiguity,
       positionSource: _source,
+      trackerCallsign: trackerCall,
       manualLat: point?.lat,
       manualLon: point?.lon,
       autoAck: _autoAck,
@@ -243,18 +251,48 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: Gaps.xl),
             Text(t('Beacon konumu'), style: theme.textTheme.titleSmall),
             const SizedBox(height: Gaps.s),
-            SegmentedButton<PositionSource>(
-              expandedInsets: EdgeInsets.zero,
-              segments: [
-                ButtonSegment(value: PositionSource.manual, label: Text(t('Sabit konum')), icon: Icon(Icons.home_outlined)),
-                ButtonSegment(value: PositionSource.phone, label: Text(t('Telefon GPS')), icon: Icon(Icons.my_location_rounded)),
-              ],
-              selected: {_source},
-              onSelectionChanged: (v) {
-                setState(() => _source = v.first);
-                _applyNow((s) => s.copyWith(positionSource: v.first));
+            RadioGroup<PositionSource>(
+              groupValue: _source,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _source = v);
+                _applyNow((s) => s.copyWith(positionSource: v));
               },
+              child: Column(children: [
+                RadioListTile<PositionSource>(
+                  contentPadding: EdgeInsets.zero,
+                  value: PositionSource.manual,
+                  title: Text(t('Sabit konum')),
+                  secondary: const Icon(Icons.home_outlined),
+                ),
+                RadioListTile<PositionSource>(
+                  contentPadding: EdgeInsets.zero,
+                  value: PositionSource.phone,
+                  title: Text(t('Telefon GPS')),
+                  secondary: const Icon(Icons.my_location_rounded),
+                ),
+                RadioListTile<PositionSource>(
+                  contentPadding: EdgeInsets.zero,
+                  value: PositionSource.tracker,
+                  title: Text(t('Tracker GPS')),
+                  subtitle: Text(t('Cihazın kendi GPS modülü varsa (dahili ya da bağlı)')),
+                  secondary: const Icon(Icons.memory_rounded),
+                ),
+              ]),
             ),
+            if (_source == PositionSource.tracker) ...[
+              const SizedBox(height: Gaps.s),
+              TextField(
+                controller: _trackerCall,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: t('Tracker çağrı işareti (boşsa yukarıdaki)'),
+                  hintText: t('SP9AQG-9'),
+                  helperText: t('Tracker kendi GPS konumuyla beacon atar ve bunu telefona da iletir; uygulama konumu oradan okur. Tracker aynı konumu zaten yayınlıyorsa uygulamadan ayrıca beacon atmak onu iki kez yayınlar.'),
+                  helperMaxLines: 5,
+                ),
+              ),
+            ],
             const SizedBox(height: Gaps.l),
             TextField(
               controller: _position,
